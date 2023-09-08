@@ -32,7 +32,7 @@
                 </span>
                 <span>
                     <label for="scale-factor">Scale Down Factor</label>
-                    <input id="scale-factor" type="text" value="1.5" onchange="validateFloat(event, .01, 100)" />
+                    <input id="scale-factor" type="text" value="1.5" onchange="validateFloat(event, .01, 100);calculateScale();" />
                 </span>
                 <span>
                     <label for="encoding-preset">Encoding Preset</label>
@@ -73,6 +73,21 @@
                     <input id="play-after" type="checkbox" />
                 </span>
                 <button onclick="clipVideo()">Clip</button>
+            </div>
+            <div style="display: flex;flex-direction: column;gap: 10px">
+                <h3>Scale Calculator</h3>
+                <span>
+                    <label for="source-width">Source Width</label>
+                    <input id="source-width" type="text" value="2560" onchange="calculateScale()" />
+                </span>
+                <span>
+                    <label for="source-height">Source Height</label>
+                    <input id="source-height" type="text" value="1440" onchange="calculateScale()" />
+                </span>
+                <span>
+                    <label for="new-size">New Size</label>
+                    <input id="new-size" type="text" readonly />
+                </span>
             </div>
         </div>
         <div style="display: flex;flex-direction: column;margin: 13px 17px 0 17px">
@@ -230,6 +245,17 @@
             return;
         }
 
+        function calculateScale() {
+            let scaleFactor = document.getElementById("scale-factor").value;
+            let sourceWidth = document.getElementById("source-width").value;
+            let sourceHeight = document.getElementById("source-height").value;
+            let newWidth = sourceWidth / scaleFactor;
+            let newHeight = sourceHeight / scaleFactor;
+            let newSize = Math.trunc(newWidth) + "x" + Math.trunc(newHeight);
+
+            document.getElementById("new-size").value = newSize;
+        }
+
         fetch('{{.FrontendUri}}/checkffmpeg')
             .then(function(response) {
                 return response.json();
@@ -245,6 +271,7 @@
                     addOutput(message);
                 } else {
                     getAvailableVideos();
+                    calculateScale();
                 }
             }
         );

@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>ffmpeg-clipper {{.HomeDirectory}}</title>
+    <link rel="shortcut icon" href="#">
+    <style>
+        .error {
+            background-color: tomato;
+        }
+    </style>
+  </head>
+  <body>
+    <h2>{{.HomeDirectory}}</h2>
+    <div style="display: flex;flex-direction: column;">
+        <div style="display: flex;flex-direction: row;gap: 20px">
+            <div style="display: flex;flex-direction: column;gap: 10px">
+                <button onclick="getAvailableVideos()">Refresh Available Videos</button>
+                <div>
+                    <label for="available-videos">Available Videos</label>
+                    <select id="available-videos" name="available-videos" size="" style="max-height: 200px;"></select> 
+                </div>
+                <button onclick="playVideo()">Play Video</button>
+            </div>
+            <div style="display: flex;flex-direction: column;gap: 10px">
+                <span>
+                    <label for="start-time">Start (hh:mm:ss)</label>
+                    <input id="start-time" type="text" value="00:00:00" onchange="validateTime(event)" />
+                </span>
+                <span>
+                    <label for="end-time">End (hh:mm:ss)</label>
+                    <input id="end-time" type="text" value="00:00:00" onchange="validateTime(event)" />
+                </span>
+                <span>
+                    <label for="scale-factor">Scale Down Factor</label>
+                    <input id="scale-factor" type="text" value="1.5" onchange="validateFloat(event, .01, 100)" />
+                </span>
+                <span>
+                    <label for="encoding-preset">Encoding Preset</label>
+                    <select id="encoding-preset" name="encoding-preset">
+                        <option value="ultrafast">ultrafast</option>
+                        <option value="superfast">superfast</option>
+                        <option value="veryfast">veryfast</option>
+                        <option value="faster">faster</option>
+                        <option value="fast">fast</option>
+                        <option value="medium" selected="selected">slow</option>
+                        <option value="slow">slow</option>
+                        <option value="slower">slower</option>
+                        <option value="veryslow">veryslow</option>
+                    </select> 
+                </span>
+                <span>
+                    <label for="quality-target">Quality Target (0 to 51)</label>
+                    <input id="quality-target" type="text" value="24" onchange="validateFloat(event, 0, 51)" />
+                </span>
+                <span>
+                    <label for="saturation">Saturation (0.0 to 3.0)</label>
+                    <input id="saturation" type="text" value="1" onchange="validateFloat(event, 0, 3)" />
+                </span>
+                <span>
+                    <label for="contrast">Contrast (-1000.0 to 1000.0)</label>
+                    <input id="contrast" type="text" value="1" onchange="validateFloat(event, -1000, 1000)" />
+                </span>
+                <span>
+                    <label for="brightness">Brightness (-1.0 to 1.0)</label>
+                    <input id="brightness" type="text" value="0" onchange="validateFloat(event, -1, 1)" />
+                </span>
+                <span>
+                    <label for="gamma">Gamma (0.1 to 10.0)</label>
+                    <input id="gamma" type="text" value="1" onchange="validateFloat(event, .1, 10)" />
+                </span>
+                <span>
+                    <label for="play-after">Play clip when done</label>
+                    <input id="play-after" type="checkbox" />
+                </span>
+                <button onclick="clipVideo()">Clip</button>
+            </div>
+        </div>
+        <div style="display: flex;flex-direction: column;margin: 13px 17px 0 17px">
+            <label for="output">Messages</label>
+            <button onclick="clearOutput()" style="width: 81px;">Clear</button>
+            <textarea id="output" style="width: 100%;" rows="15" readonly></textarea>
+        </div>
+    </div>
+    <script>
+        function playVideo() {
+            let dropdown = document.getElementById("available-videos");
+            let video = dropdown.options[dropdown.selectedIndex];
+
+            if (video) {
+                fetch('{{.FrontendUri}}/playvideo/' + encodeURIComponent(video.value))
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(responseJson) {
+                    if (responseJson.error) {
+                        addOutput(responseJson.error);
+                    }
+                });
+            }
+        }
+
+        function clipVideo() {
+            if (document.getElementsByClassName("error").length > 0) {
+                addOutput("You have clip settings errors, fix them!");
+                return;
+            }
+
+            let videoDropdown = document.getElementById("available-videos");
+            let encodingPresetDropdown = document.getElementById("encoding-preset");
+
+            let payload = {
+                "video": videoDropdown.options[videoDropdown.selectedIndex].value,
+                "startTime": document.getElementById("start-time").value,
+                "endTime": document.getElementById("end-time").value,
+                "scaleFactor": document.getElementById("scale-factor").value,
+                "encodingPreset": encodingPresetDropdown.options[encodingPresetDropdown.selectedIndex].value,
+                "qualityTarget": document.getElementById("quality-target").value,
+                "saturation": document.getElementById("saturation").value,
+                "contrast": document.getElementById("contrast").value,
+                "brightness": document.getElementById("brightness").value,
+                "gamma": document.getElementById("gamma").value,
+                "playAfter": document.getElementById("play-after").checked
+            }
+
+            fetch('{{.FrontendUri}}/clipvideo', {
+                method: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(responseJson) {
+                if (responseJson.error) {
+                    addOutput(responseJson.error);
+                } else {
+                    addOutput(responseJson.newVideoName + " was created!");
+                    getAvailableVideos();
+                }
+            });
+        }
+
+        function getAvailableVideos() {
+            fetch('{{.FrontendUri}}/getavailablevideos')
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(responseJson) {
+                if (responseJson.error) {
+                    addOutput(responseJson.error);
+                } else {
+                    let dropdown = document.getElementById("available-videos");
+                    dropdown.innerHTML = "";
+
+                    for (let i = 0; i < responseJson.AvailableVideos.length; i++) {
+                        let option = document.createElement("option");
+                        option.text = responseJson.AvailableVideos[i];
+                        option.value = responseJson.AvailableVideos[i];
+                        dropdown.add(option);
+                    }
+
+                    dropdown.setAttribute('size', responseJson.AvailableVideos.length);
+                }
+            });
+        }
+
+        function clearOutput() {
+            document.getElementById("output").value = "";
+        }
+
+        function addOutput(message) {
+            let output = document.getElementById("output");
+
+            output.value = output.value + message + '\n';
+        }
+
+        function validateTime(event) {
+            let value = event.target.value;
+
+            if (typeof value !== "string") {
+                event.target.classList.add("error");
+                return;
+            }
+
+            let values = value.split(":");
+
+            if (values.length !== 3) {
+                event.target.classList.add("error");
+                return;
+            }
+
+            for (let i = 0; i < values.length; i++) {
+                if (values[i].length !== 2) {
+                    event.target.classList.add("error");
+                    return;
+                }
+
+                if (values[i].includes('-')) {
+                    event.target.classList.add("error");
+                    return;
+                }
+
+                if (isNaN(values[i])) {
+                    event.target.classList.add("error");
+                    return;
+                }
+            }
+
+            event.target.classList.remove("error");
+            return;
+        }
+
+        function validateFloat(event, min, max) {
+            let value = event.target.value;
+
+            if (isNaN(value)) {
+                event.target.classList.add("error");
+                return;
+            }
+
+            if (value < min || value > max) {
+                event.target.classList.add("error");
+                return;
+            }
+
+            event.target.classList.remove("error");
+            return;
+        }
+
+        fetch('{{.FrontendUri}}/checkffmpeg')
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(responseJson) {
+                let message = "";
+
+                if (responseJson.FFmpegExists === false || responseJson.FFplayExists === false) {
+                    message = 'Either FFmpeg or FFplay is missing, please download official releases and include them in the same directory as ffmpeg-clipper or add them to your OS PATH. https://ffmpeg.org/download.html';
+                }
+
+                if (message !== "") {
+                    addOutput(message);
+                } else {
+                    getAvailableVideos();
+                }
+            }
+        );
+    </script>
+  </body>
+</html>

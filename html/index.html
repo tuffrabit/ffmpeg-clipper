@@ -32,7 +32,7 @@
                 </span>
                 <span>
                     <label for="scale-factor">Scale Down Factor</label>
-                    <input id="scale-factor" type="text" value="1.5" onchange="validateFloat(event, .01, 100);calculateScale();" />
+                    <input id="scale-factor" type="text" value="2.666" onchange="validateFloat(event, .01, 100);calculateScale();" />
                 </span>
                 <span>
                     <label for="encoding-preset">Encoding Preset</label>
@@ -42,7 +42,7 @@
                         <option value="veryfast">veryfast</option>
                         <option value="faster">faster</option>
                         <option value="fast">fast</option>
-                        <option value="medium" selected="selected">slow</option>
+                        <option value="medium" selected="selected">medium</option>
                         <option value="slow">slow</option>
                         <option value="slower">slower</option>
                         <option value="veryslow">veryslow</option>
@@ -123,8 +123,15 @@
             let videoDropdown = document.getElementById("available-videos");
             let encodingPresetDropdown = document.getElementById("encoding-preset");
 
+            let selectedVideo = videoDropdown.options[videoDropdown.selectedIndex];
+
+            if (!selectedVideo) {
+                addOutput("You don't have a video selected.");
+                return;
+            }
+
             let payload = {
-                "video": videoDropdown.options[videoDropdown.selectedIndex].value,
+                "video": selectedVideo.value,
                 "startTime": document.getElementById("start-time").value,
                 "endTime": document.getElementById("end-time").value,
                 "scaleFactor": document.getElementById("scale-factor").value,

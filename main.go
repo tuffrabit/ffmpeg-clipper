@@ -124,12 +124,12 @@ func GetAvailableVideos(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}
 
 	allowedExtensions := map[string]struct{}{
-		".mp4": struct{}{},
-		".mkv": struct{}{},
-		".avi": struct{}{},
-		".flv": struct{}{},
-		".mov": struct{}{},
-		".wmv": struct{}{},
+		".mp4": {},
+		".mkv": {},
+		".avi": {},
+		".flv": {},
+		".mov": {},
+		".wmv": {},
 	}
 
 	for _, entry := range dirEntries {
@@ -203,7 +203,7 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	videoExtension := filepath.Ext(payloadJson.Video)
 	videoName := payloadJson.Video[:len(payloadJson.Video)-len(videoExtension)]
-	newVideoName := fmt.Sprintf("%v_clip%v%v", videoName, getRandomScreen(), videoExtension)
+	newVideoName := fmt.Sprintf("%v_clip%v%v", videoName, getRandomString(), videoExtension)
 
 	cmd := exec.Command(ffmpegPath,
 		"-ss",
@@ -269,7 +269,7 @@ func runSystemCommand(cmd *exec.Cmd, dieOnError bool) {
 	}
 }
 
-func getRandomScreen() string {
+func getRandomString() string {
 	n := 5
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {

@@ -357,16 +357,16 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		if payloadJson.AlternatePlayer != "" {
 			currentDir, err := os.Getwd()
 			if err != nil {
-				log.Printf("main.PlayVideo: could not get current dir: %v", err)
-				fmt.Fprint(w, "{\"error\": \"main.PlayVideo: could not get current dir\"}")
+				log.Printf("main.ClipVideo: could not get current dir: %v", err)
+				fmt.Fprint(w, "{\"error\": \"main.ClipVideo: could not get current dir\"}")
 				return
 			}
 
-			video := filepath.Join(currentDir, payloadJson.Video)
+			video := filepath.Join(currentDir, newVideoName)
 			cmd := exec.Command(payloadJson.AlternatePlayer, video)
 			runSystemCommand(cmd, false)
 		} else {
-			cmd := exec.Command(ffplayPath, payloadJson.Video)
+			cmd := exec.Command(ffplayPath, newVideoName)
 			runSystemCommand(cmd, false)
 		}
 	}

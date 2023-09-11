@@ -13,13 +13,18 @@
     <h2>{{.HomeDirectory}}</h2>
     <div style="display: flex;flex-direction: column;">
         <div style="display: flex;flex-direction: row;gap: 20px">
-            <div style="display: flex;flex-direction: column;gap: 10px">
+            <div style="display: flex;flex-direction: column;gap: 10px;max-width: 550px">
                 <button onclick="getAvailableVideos()">Refresh Available Videos</button>
                 <div>
                     <label for="available-videos">Available Videos</label>
                     <select id="available-videos" name="available-videos" size="" style="max-height: 200px;"></select> 
                 </div>
                 <button onclick="playVideo()">Play Video</button>
+                <div>
+                    <label for="alternate-player">Alternate Player</label>
+                    <input id="alternate-player" type="text" style="width: 100%" /> 
+                </div>
+                <p>Full path to valid video player executable. ffmpeg-clipper assumes the alternate player executable simply takes a video file path as its main argument.</p>
             </div>
             <div style="display: flex;flex-direction: column;gap: 10px">
                 <span>
@@ -75,14 +80,23 @@
                 <button onclick="clipVideo()">Clip</button>
             </div>
             <div style="display: flex;flex-direction: column;gap: 10px">
+                <span>
+                    <label for="profiles">Profiles</label>
+                    <select id="profiles" name="profiles" size="0" style="max-height: 135px;" onchange="profileSelected()"></select> 
+                </span>
+                <span style="display: flex;flex-direction: row;gap: 7px">
+                    <button onclick="saveProfile()">Save</button>
+                    <button onclick="saveNewProfile()">Save New</button>
+                    <button onclick="deleteProfile()">Delete</button>
+                </span>
                 <h3>Scale Calculator</h3>
                 <span>
                     <label for="source-width">Source Width</label>
-                    <input id="source-width" type="text" value="2560" onchange="calculateScale()" />
+                    <input id="source-width" type="text" value="2560" onchange="validateInt(event, 0, 8192);calculateScale()" />
                 </span>
                 <span>
                     <label for="source-height">Source Height</label>
-                    <input id="source-height" type="text" value="1440" onchange="calculateScale()" />
+                    <input id="source-height" type="text" value="1440" onchange="validateInt(event, 0, 8192);calculateScale()" />
                 </span>
                 <span>
                     <label for="new-size">New Size</label>
@@ -97,12 +111,46 @@
         </div>
     </div>
     <script>
+        function getBasicSettingsPayload() {
+            let encodingPresetDropdown = document.getElementById("encoding-preset");
+            let payload = null;
+
+            try {
+                payload = {
+                    "scaleFactor": parseFloat(document.getElementById("scale-factor").value),
+                    "encodingPreset": encodingPresetDropdown.options[encodingPresetDropdown.selectedIndex].value,
+                    "qualityTarget": parseInt(document.getElementById("quality-target").value),
+                    "saturation": parseFloat(document.getElementById("saturation").value),
+                    "contrast": parseFloat(document.getElementById("contrast").value),
+                    "brightness": parseFloat(document.getElementById("brightness").value),
+                    "gamma": parseFloat(document.getElementById("gamma").value),
+                    "playAfter": document.getElementById("play-after").checked
+                };
+            } catch(err) {
+                addOutput("Could not create request payload, err: " + err);
+            }
+
+            return payload;
+        }
+
         function playVideo() {
             let dropdown = document.getElementById("available-videos");
             let video = dropdown.options[dropdown.selectedIndex];
 
             if (video) {
-                fetch('{{.FrontendUri}}/playvideo/' + encodeURIComponent(video.value))
+                let payload = {
+                    "video": video.value,
+                    "alternatePlayer": document.getElementById("alternate-player").value
+                };
+
+                fetch('{{.FrontendUri}}/playvideo/', {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
                 .then(function(response) {
                     return response.json();
                 })
@@ -121,8 +169,6 @@
             }
 
             let videoDropdown = document.getElementById("available-videos");
-            let encodingPresetDropdown = document.getElementById("encoding-preset");
-
             let selectedVideo = videoDropdown.options[videoDropdown.selectedIndex];
 
             if (!selectedVideo) {
@@ -130,19 +176,11 @@
                 return;
             }
 
-            let payload = {
-                "video": selectedVideo.value,
-                "startTime": document.getElementById("start-time").value,
-                "endTime": document.getElementById("end-time").value,
-                "scaleFactor": document.getElementById("scale-factor").value,
-                "encodingPreset": encodingPresetDropdown.options[encodingPresetDropdown.selectedIndex].value,
-                "qualityTarget": document.getElementById("quality-target").value,
-                "saturation": document.getElementById("saturation").value,
-                "contrast": document.getElementById("contrast").value,
-                "brightness": document.getElementById("brightness").value,
-                "gamma": document.getElementById("gamma").value,
-                "playAfter": document.getElementById("play-after").checked
-            }
+            let payload = getBasicSettingsPayload();
+            payload.video = selectedVideo.value;
+            payload.startTime = document.getElementById("start-time").value;
+            payload.endTime = document.getElementById("end-time").value;
+            payload.alternatePlayer = document.getElementById("alternate-player").value;
 
             fetch('{{.FrontendUri}}/clipvideo', {
                 method: "POST",
@@ -187,6 +225,168 @@
                     dropdown.setAttribute('size', responseJson.AvailableVideos.length);
                 }
             });
+        }
+
+        function getConfig() {
+            let dropdown = document.getElementById("profiles");
+            let selected = "";
+            let selectedOption = dropdown.options[dropdown.selectedIndex];
+
+            if (selectedOption) {
+                selected = selectedOption.value;
+            }
+
+            fetch('{{.FrontendUri}}/getconfig')
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(responseJson) {
+                if (responseJson.error) {
+                    addOutput(responseJson.error);
+                } else {
+                    let dropdown = document.getElementById("profiles");
+                    dropdown.innerHTML = "";
+
+                    for (let i = 0; i < responseJson.profiles.length; i++) {
+                        let option = document.createElement("option");
+                        option.text = responseJson.profiles[i].profileName;
+                        option.value = responseJson.profiles[i].profileName;
+
+                        if (selected === responseJson.profiles[i].profileName) {
+                            option.selected = "selected";
+                        }
+
+                        dropdown.add(option);
+                    }
+
+                    dropdown.setAttribute('size', responseJson.profiles.length);
+                    profiles = responseJson.profiles;
+                    profileSelected();
+                }
+            });
+        }
+
+        function saveProfile() {
+            let profile = getSelectedProfile();
+
+            if (profile) {
+                let confirmed = confirm("Are you sure?");
+
+                if (confirmed) {
+                    doSaveProfile(profile.profileName);
+                }
+            }
+        }
+
+        function saveNewProfile() {
+            let profileName = prompt("Profile Name?");
+
+            if (profileName) {
+                let confirmed = confirm("Are you sure?");
+
+                if (confirmed) {
+                    doSaveProfile(profileName);
+                }
+            }
+        }
+
+        function deleteProfile() {
+            let profile = getSelectedProfile();
+
+            if (profile) {
+                let confirmed = confirm("Are you sure?");
+
+                if (confirmed) {
+                    let payload = {"profileName": profile.profileName};
+                    
+                    fetch('{{.FrontendUri}}/deleteprofile', {
+                        method: "DELETE",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(responseJson) {
+                        if (responseJson.error) {
+                            addOutput(responseJson.error);
+                        } else {
+                            addOutput(profile.profileName + " was deleted!");
+                            getConfig();
+                        }
+                    });
+                }
+            }
+        }
+
+        function doSaveProfile(profileName) {
+            if (profileName) {
+                let payload = getBasicSettingsPayload();
+                payload.profileName = profileName;
+                payload.sourceWidth = parseInt(document.getElementById("source-width").value);
+                payload.sourceHeight = parseInt(document.getElementById("source-height").value);
+                payload.alternatePlayer = document.getElementById("alternate-player").value;
+
+                fetch('{{.FrontendUri}}/saveprofile', {
+                    method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(responseJson) {
+                    if (responseJson.error) {
+                        addOutput(responseJson.error);
+                    } else {
+                        addOutput(profileName + " was saved!");
+                        getConfig();
+                    }
+                });
+            }
+        }
+
+        function getSelectedProfile() {
+            let dropdown = document.getElementById("profiles");
+            let selectedOption = dropdown.options[dropdown.selectedIndex];
+            let profile = null;
+
+            if (selectedOption) {
+                let selected = dropdown.options[dropdown.selectedIndex].value;
+
+                for (let i = 0; i < profiles.length; i++) {
+                    if (selected === profiles[i].profileName) {
+                        profile = profiles[i];
+                        break;
+                    }
+                }
+            }
+
+            return profile;
+        }
+
+        function profileSelected() {
+            let profile = getSelectedProfile();
+
+            if (profile) {
+                document.getElementById("scale-factor").value = profile.scaleFactor;
+                document.getElementById("encoding-preset").value = profile.encodingPreset;
+                document.getElementById("quality-target").value = profile.qualityTarget;
+                document.getElementById("saturation").value = profile.saturation;
+                document.getElementById("contrast").value = profile.contrast;
+                document.getElementById("brightness").value = profile.brightness;
+                document.getElementById("gamma").value = profile.gamma;
+                document.getElementById("play-after").checked = profile.playAfter;
+                document.getElementById("source-width").value = profile.sourceWidth;
+                document.getElementById("source-height").value = profile.sourceHeight;
+                document.getElementById("alternate-player").value = profile.alternatePlayer;
+            }
         }
 
         function clearOutput() {
@@ -252,6 +452,30 @@
             return;
         }
 
+        function validateInt(event, min, max) {
+            let value = event.target.value;
+
+            if (isNaN(value) || value.includes('.')) {
+                event.target.classList.add("error");
+                return;
+            }
+
+            value = parseInt(value);
+
+            if (!Number.isInteger(value)) {
+                event.target.classList.add("error");
+                return;
+            }
+
+            if (value < min || value > max) {
+                event.target.classList.add("error");
+                return;
+            }
+
+            event.target.classList.remove("error");
+            return;
+        }
+
         function calculateScale() {
             let scaleFactor = document.getElementById("scale-factor").value;
             let sourceWidth = document.getElementById("source-width").value;
@@ -262,6 +486,8 @@
 
             document.getElementById("new-size").value = newSize;
         }
+
+        let profiles;
 
         fetch('{{.FrontendUri}}/checkffmpeg')
             .then(function(response) {
@@ -277,6 +503,7 @@
                 if (message !== "") {
                     addOutput(message);
                 } else {
+                    getConfig();
                     getAvailableVideos();
                     calculateScale();
                 }

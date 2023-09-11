@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/json"
+	"ffmpeg-clipper/config"
 	"ffmpeg-clipper/html"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+var configJson *config.ConfigJson
 var frontendUri string
 var indexHtmlContent string
 var ffmpegPath string
@@ -27,23 +29,32 @@ var ffplayPath string
 
 func main() {
 	var err error
+
+	configJson, err = config.GetConfig()
+	if err != nil {
+		log.Fatalf("main.main: could not get config: %v", err)
+	}
+
 	router := httprouter.New()
 	router.GET("/", Index)
 	router.GET("/checkffmpeg", CheckFFmpeg)
 	router.GET("/getavailablevideos", GetAvailableVideos)
-	router.GET("/playvideo/:name", PlayVideo)
+	router.GET("/getconfig", GetConfig)
+	router.POST("/saveprofile", SaveProfile)
+	router.DELETE("/deleteprofile", DeleteProfile)
+	router.POST("/playvideo", PlayVideo)
 	router.POST("/clipvideo", ClipVideo)
 
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("main.main: could not start http listener: %v", err)
 	}
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	frontendUri = "http://localhost:" + strconv.Itoa(port)
 	indexHtmlContent, err = html.GetIndexHtmlContent(frontendUri)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("main.main: could not load index html: %v", err)
 	}
 
 	fmt.Println("Using port:", port)
@@ -154,21 +165,125 @@ func GetAvailableVideos(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}
 }
 
-func PlayVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	video := ps.ByName("name")
+func GetConfig(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	resultBytes, err := json.Marshal(configJson)
+	if err != nil {
+		log.Printf("main.GetConfig: could not marshal struct to json: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.GetConfig: could not marshal struct to json\"}")
+	} else {
+		fmt.Fprint(w, string(resultBytes))
+	}
+}
 
+func SaveProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("main.SaveProfile: could not read request body: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.SaveProfile: could not read request body\"}")
+		return
+	}
+
+	payloadJson := config.ClipProfileJson{}
+	err = json.Unmarshal(bodyBytes, &payloadJson)
+	if err != nil {
+		log.Printf("main.SaveProfile: could not json marshal request body: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.SaveProfile: could not json marshal request body\"}")
+		return
+	}
+
+	err = config.SaveProfile(&payloadJson)
+	if err != nil {
+		log.Printf("main.SaveProfile: could not save profile: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.SaveProfile: could not save profile\"}")
+		return
+	}
+
+	configJson, err = config.GetConfig()
+	if err != nil {
+		log.Fatalf("main.SaveProfile: could not load updated config: %v", err)
+	}
+
+	fmt.Fprint(w, "{}")
+}
+
+func DeleteProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("main.DeleteProfile: could not read request body: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.DeleteProfile: could not read request body\"}")
+		return
+	}
+
+	payloadJson := struct {
+		ProfileName string `json:"profileName"`
+	}{}
+	err = json.Unmarshal(bodyBytes, &payloadJson)
+	if err != nil {
+		log.Printf("main.DeleteProfile: could not json marshal request body: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.DeleteProfile: could not json marshal request body\"}")
+		return
+	}
+
+	err = config.DeleteProfile(payloadJson.ProfileName)
+	if err != nil {
+		log.Printf("main.DeleteProfile: could not delete profile: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.DeleteProfile: could not delete profile\"}")
+		return
+	}
+
+	configJson, err = config.GetConfig()
+	if err != nil {
+		log.Fatalf("main.DeleteProfile: could not load updated config: %v", err)
+	}
+
+	fmt.Fprint(w, "{}")
+}
+
+func PlayVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	header := w.Header()
 	header.Set("Content-Type", "application/json")
 
-	_, err := os.Stat(video)
+	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("main.PlayVideo: %v does not exist: %v", video, err)
+		log.Printf("main.PlayVideo: could not read request body: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.PlayVideo: could not read request body\"}")
+		return
+	}
+
+	payloadJson := struct {
+		Video           string `json:"video"`
+		AlternatePlayer string `json:"alternatePlayer"`
+	}{}
+	err = json.Unmarshal(bodyBytes, &payloadJson)
+	if err != nil {
+		log.Printf("main.PlayVideo: could not json marshal request body: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.PlayVideo: could not json marshal request body\"}")
+		return
+	}
+
+	_, err = os.Stat(payloadJson.Video)
+	if err != nil {
+		log.Printf("main.PlayVideo: %v does not exist: %v", payloadJson.Video, err)
 		fmt.Fprint(w, "{\"error\": \"main.PlayVideo: requested video file does not exist\"}")
 		return
 	}
 
-	cmd := exec.Command(ffplayPath, video)
-	runSystemCommand(cmd, false)
+	if payloadJson.AlternatePlayer != "" {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			log.Printf("main.PlayVideo: could not get current dir: %v", err)
+			fmt.Fprint(w, "{\"error\": \"main.PlayVideo: could not get current dir\"}")
+			return
+		}
+
+		video := filepath.Join(currentDir, payloadJson.Video)
+		cmd := exec.Command(payloadJson.AlternatePlayer, video)
+		runSystemCommand(cmd, false)
+	} else {
+		cmd := exec.Command(ffplayPath, payloadJson.Video)
+		runSystemCommand(cmd, false)
+	}
+
 	fmt.Fprint(w, "{}")
 }
 
@@ -181,17 +296,18 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	payloadJson := struct {
-		Video          string `json:"video"`
-		StartTime      string `json:"startTime"`
-		EndTime        string `json:"endTime"`
-		ScaleFactor    string `json:"scaleFactor"`
-		EncodingPreset string `json:"encodingPreset"`
-		QualityTarget  string `json:"qualityTarget"`
-		Saturation     string `json:"saturation"`
-		Contrast       string `json:"contrast"`
-		Brightness     string `json:"brightness"`
-		Gamma          string `json:"gamma"`
-		PlayAfter      bool   `json:"playAfter"`
+		Video           string  `json:"video"`
+		StartTime       string  `json:"startTime"`
+		EndTime         string  `json:"endTime"`
+		ScaleFactor     float32 `json:"scaleFactor"`
+		EncodingPreset  string  `json:"encodingPreset"`
+		QualityTarget   int     `json:"qualityTarget"`
+		Saturation      float32 `json:"saturation"`
+		Contrast        float32 `json:"contrast"`
+		Brightness      float32 `json:"brightness"`
+		Gamma           float32 `json:"gamma"`
+		PlayAfter       bool    `json:"playAfter"`
+		AlternatePlayer string  `json:"alternatePlayer"`
 	}{}
 
 	err = json.Unmarshal(bodyBytes, &payloadJson)
@@ -217,7 +333,7 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		"-preset",
 		payloadJson.EncodingPreset,
 		"-crf",
-		payloadJson.QualityTarget,
+		strconv.Itoa(payloadJson.QualityTarget),
 		"-vf",
 		fmt.Sprintf("scale=iw/%v:-1:flags=bicubic,eq=saturation=%v:contrast=%v:brightness=%v:gamma=%v",
 			payloadJson.ScaleFactor,
@@ -238,8 +354,21 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	if payloadJson.PlayAfter {
-		cmd := exec.Command(ffplayPath, newVideoName)
-		runSystemCommand(cmd, false)
+		if payloadJson.AlternatePlayer != "" {
+			currentDir, err := os.Getwd()
+			if err != nil {
+				log.Printf("main.PlayVideo: could not get current dir: %v", err)
+				fmt.Fprint(w, "{\"error\": \"main.PlayVideo: could not get current dir\"}")
+				return
+			}
+
+			video := filepath.Join(currentDir, payloadJson.Video)
+			cmd := exec.Command(payloadJson.AlternatePlayer, video)
+			runSystemCommand(cmd, false)
+		} else {
+			cmd := exec.Command(ffplayPath, payloadJson.Video)
+			runSystemCommand(cmd, false)
+		}
 	}
 
 	fmt.Fprint(w, "{\"newVideoName\": \""+newVideoName+"\"}")

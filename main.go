@@ -26,6 +26,7 @@ var frontendUri string
 var indexHtmlContent string
 var ffmpegPath string
 var ffplayPath string
+var ffprobePath string
 
 func main() {
 	var err error
@@ -39,6 +40,7 @@ func main() {
 	router.GET("/", Index)
 	router.GET("/checkffmpeg", CheckFFmpeg)
 	router.GET("/getavailablevideos", GetAvailableVideos)
+	router.GET("/getvideodetails/:name", GetVideoDetails)
 	router.GET("/getconfig", GetConfig)
 	router.POST("/saveprofile", SaveProfile)
 	router.DELETE("/deleteprofile", DeleteProfile)
@@ -63,7 +65,7 @@ func main() {
 		time.Sleep(2 * time.Second)
 
 		cmd := exec.Command("explorer", frontendUri)
-		runSystemCommand(cmd, false)
+		runSystemCommand(cmd)
 	}(port)
 
 	log.Fatal(http.Serve(listener, router))
@@ -76,12 +78,15 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 func CheckFFmpeg(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	ffmpegPath = "./ffmpeg.exe"
 	ffplayPath = "./ffplay.exe"
+	ffprobePath = "./ffprobe.exe"
 	result := struct {
-		FFmpegExists bool
-		FFplayExists bool
+		FFmpegExists  bool
+		FFplayExists  bool
+		FFprobeExists bool
 	}{
-		FFmpegExists: false,
-		FFplayExists: false,
+		FFmpegExists:  false,
+		FFplayExists:  false,
+		FFprobeExists: false,
 	}
 
 	pathVar := os.Getenv("PATH")
@@ -92,6 +97,7 @@ func CheckFFmpeg(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		if strings.Contains(pathEntry, "ffmpeg") {
 			ffmpegPath = fmt.Sprintf("%v%vffmpeg.exe", pathEntry, pathSeparator)
 			ffplayPath = fmt.Sprintf("%v%vffplay.exe", pathEntry, pathSeparator)
+			ffprobePath = fmt.Sprintf("%v%vffprobe.exe", pathEntry, pathSeparator)
 			break
 		}
 	}
@@ -104,6 +110,11 @@ func CheckFFmpeg(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	_, err = os.Stat(ffplayPath)
 	if err == nil {
 		result.FFplayExists = true
+	}
+
+	_, err = os.Stat(ffprobePath)
+	if err == nil {
+		result.FFprobeExists = true
 	}
 
 	header := w.Header()
@@ -160,6 +171,54 @@ func GetAvailableVideos(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	if err != nil {
 		log.Printf("main.GetAvailableVideos: could not marshal struct to json: %v", err)
 		fmt.Fprint(w, "{\"error\": \"main.GetAvailableVideos: could not marshal struct to json\"}")
+	} else {
+		fmt.Fprint(w, string(resultBytes))
+	}
+}
+
+func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	video := ps.ByName("name")
+
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+
+	_, err := os.Stat(video)
+	if err != nil {
+		log.Printf("main.GetVideoDetails: %v does not exist: %v", video, err)
+		fmt.Fprint(w, "{\"error\": \"main.GetVideoDetails: requested video file does not exist\"}")
+		return
+	}
+
+	cmd := exec.Command(
+		"./ffprobe.exe",
+		"-v",
+		"error",
+		"-select_streams",
+		"v:0",
+		"-show_entries",
+		"stream=width,height",
+		"-of",
+		"csv=s=x:p=0",
+		video,
+	)
+	output, err := runSystemCommand(cmd)
+	if err != nil {
+		log.Printf("main.GetVideoDetails: ffprobe failed: %v", err)
+		log.Printf("main.GetVideoDetails: ffprobe failed: %v", output)
+		fmt.Fprint(w, "{\"error\": \"main.GetVideoDetails: ffprobe failed\"}")
+		return
+	}
+
+	result := struct {
+		Resolution string
+	}{
+		Resolution: output,
+	}
+
+	resultBytes, err := json.Marshal(result)
+	if err != nil {
+		log.Printf("main.GetVideoDetails: could not marshal struct to json: %v", err)
+		fmt.Fprint(w, "{\"error\": \"main.GetVideoDetails: could not marshal struct to json\"}")
 	} else {
 		fmt.Fprint(w, string(resultBytes))
 	}
@@ -278,10 +337,10 @@ func PlayVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 		video := filepath.Join(currentDir, payloadJson.Video)
 		cmd := exec.Command(payloadJson.AlternatePlayer, video)
-		runSystemCommand(cmd, false)
+		runSystemCommand(cmd)
 	} else {
 		cmd := exec.Command(ffplayPath, payloadJson.Video)
-		runSystemCommand(cmd, false)
+		runSystemCommand(cmd)
 	}
 
 	fmt.Fprint(w, "{}")
@@ -344,7 +403,7 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		),
 		newVideoName,
 	)
-	runSystemCommand(cmd, false)
+	runSystemCommand(cmd)
 
 	_, err = os.Stat(newVideoName)
 	if err != nil {
@@ -364,17 +423,17 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 			video := filepath.Join(currentDir, newVideoName)
 			cmd := exec.Command(payloadJson.AlternatePlayer, video)
-			runSystemCommand(cmd, false)
+			runSystemCommand(cmd)
 		} else {
 			cmd := exec.Command(ffplayPath, newVideoName)
-			runSystemCommand(cmd, false)
+			runSystemCommand(cmd)
 		}
 	}
 
 	fmt.Fprint(w, "{\"newVideoName\": \""+newVideoName+"\"}")
 }
 
-func runSystemCommand(cmd *exec.Cmd, dieOnError bool) {
+func runSystemCommand(cmd *exec.Cmd) (string, error) {
 	var cmdOut bytes.Buffer
 	var cmdErr bytes.Buffer
 	cmd.Stdout = &cmdOut
@@ -384,17 +443,18 @@ func runSystemCommand(cmd *exec.Cmd, dieOnError bool) {
 	log.Printf("Running %v\n", cmdString)
 
 	err := cmd.Run()
-	if err != nil {
-		log.Printf("%v stdout: %v", cmdString, cmdOut.String())
-		log.Printf("%v stderr: %v", cmdString, cmdErr.String())
+	outString := cmdOut.String()
+	errString := cmdErr.String()
+	if err != nil || errString != "" {
+		log.Printf("%v stdout: %v", cmdString, outString)
+		log.Printf("%v stderr: %v", cmdString, errString)
+		log.Println(err)
 
-		if dieOnError {
-			log.Fatal(err)
-		} else {
-			log.Println(err)
-		}
+		return errString, err
 	} else {
-		log.Printf("%v stdout: %v", cmdString, cmdOut.String())
+		log.Printf("%v stdout: %v", cmdString, outString)
+
+		return outString, nil
 	}
 }
 

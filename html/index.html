@@ -90,13 +90,14 @@
                     <button onclick="deleteProfile()">Delete</button>
                 </span>
                 <h3>Scale Calculator</h3>
+                <button onclick="getVideoDetails()">Get Video Details</button>
                 <span>
                     <label for="source-width">Source Width</label>
-                    <input id="source-width" type="text" value="2560" onchange="validateInt(event, 0, 8192);calculateScale()" />
+                    <input id="source-width" type="text" readonly />
                 </span>
                 <span>
                     <label for="source-height">Source Height</label>
-                    <input id="source-height" type="text" value="1440" onchange="validateInt(event, 0, 8192);calculateScale()" />
+                    <input id="source-height" type="text" readonly />
                 </span>
                 <span>
                     <label for="new-size">New Size</label>
@@ -143,6 +144,7 @@
                     "alternatePlayer": document.getElementById("alternate-player").value
                 };
 
+                disableButtons();
                 fetch('{{.FrontendUri}}/playvideo/', {
                     method: "POST",
                     headers: {
@@ -152,6 +154,7 @@
                     body: JSON.stringify(payload)
                 })
                 .then(function(response) {
+                    enableButtons();
                     return response.json();
                 })
                 .then(function(responseJson) {
@@ -182,6 +185,7 @@
             payload.endTime = document.getElementById("end-time").value;
             payload.alternatePlayer = document.getElementById("alternate-player").value;
 
+            disableButtons();
             fetch('{{.FrontendUri}}/clipvideo', {
                 method: "POST",
                 headers: {
@@ -191,6 +195,7 @@
                 body: JSON.stringify(payload)
             })
             .then(function(response) {
+                enableButtons();
                 return response.json();
             })
             .then(function(responseJson) {
@@ -204,27 +209,75 @@
         }
 
         function getAvailableVideos() {
+            let dropdown = document.getElementById("available-videos");
+            let selected = "";
+            let selectedOption = dropdown.options[dropdown.selectedIndex];
+
+            if (selectedOption) {
+                selected = selectedOption.value;
+            }
+
+            disableButtons();
             fetch('{{.FrontendUri}}/getavailablevideos')
             .then(function(response) {
+                enableButtons();
                 return response.json();
             })
             .then(function(responseJson) {
                 if (responseJson.error) {
                     addOutput(responseJson.error);
                 } else {
-                    let dropdown = document.getElementById("available-videos");
                     dropdown.innerHTML = "";
 
                     for (let i = 0; i < responseJson.AvailableVideos.length; i++) {
+                        let videoName = responseJson.AvailableVideos[i];
                         let option = document.createElement("option");
-                        option.text = responseJson.AvailableVideos[i];
-                        option.value = responseJson.AvailableVideos[i];
+                        option.text = videoName;
+                        option.value = videoName;
+
+                        if (selected === videoName) {
+                            option.selected = "selected";
+                        }
+
                         dropdown.add(option);
                     }
 
                     dropdown.setAttribute('size', responseJson.AvailableVideos.length);
+                    addOutput("Available videos retrieved");
                 }
             });
+        }
+
+        function getVideoDetails() {
+            let dropdown = document.getElementById("available-videos");
+            let video = dropdown.options[dropdown.selectedIndex];
+
+            if (video) {
+                disableButtons();
+                fetch('{{.FrontendUri}}/getvideodetails/' + encodeURIComponent(video.value))
+                .then(function(response) {
+                    enableButtons();
+                    return response.json();
+                })
+                .then(function(responseJson) {
+                    if (responseJson.error) {
+                        addOutput(responseJson.error);
+                    } else {
+                        let resolution = responseJson.Resolution;
+
+                        if (resolution && resolution.includes("x")) {
+                            let resolutionFields = resolution.split("x");
+
+                            if (Array.isArray(resolutionFields) && resolutionFields.length > 1) {
+                                document.getElementById("source-width").value = resolutionFields[0];
+                                document.getElementById("source-height").value = resolutionFields[1];
+                                calculateScale();
+                                addOutput("Video details retrieved for " + video.value);
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         function getConfig() {
@@ -236,8 +289,10 @@
                 selected = selectedOption.value;
             }
 
+            disableButtons();
             fetch('{{.FrontendUri}}/getconfig')
             .then(function(response) {
+                enableButtons();
                 return response.json();
             })
             .then(function(responseJson) {
@@ -262,6 +317,7 @@
                     dropdown.setAttribute('size', responseJson.profiles.length);
                     profiles = responseJson.profiles;
                     profileSelected();
+                    addOutput("Config retrieved");
                 }
             });
         }
@@ -299,6 +355,7 @@
                 if (confirmed) {
                     let payload = {"profileName": profile.profileName};
                     
+                    disableButtons();
                     fetch('{{.FrontendUri}}/deleteprofile', {
                         method: "DELETE",
                         headers: {
@@ -308,6 +365,7 @@
                         body: JSON.stringify(payload)
                     })
                     .then(function(response) {
+                        enableButtons();
                         return response.json();
                     })
                     .then(function(responseJson) {
@@ -326,10 +384,9 @@
             if (profileName) {
                 let payload = getBasicSettingsPayload();
                 payload.profileName = profileName;
-                payload.sourceWidth = parseInt(document.getElementById("source-width").value);
-                payload.sourceHeight = parseInt(document.getElementById("source-height").value);
                 payload.alternatePlayer = document.getElementById("alternate-player").value;
 
+                disableButtons();
                 fetch('{{.FrontendUri}}/saveprofile', {
                     method: "POST",
                     headers: {
@@ -339,6 +396,7 @@
                     body: JSON.stringify(payload)
                 })
                 .then(function(response) {
+                    enableButtons();
                     return response.json();
                 })
                 .then(function(responseJson) {
@@ -383,8 +441,6 @@
                 document.getElementById("brightness").value = profile.brightness;
                 document.getElementById("gamma").value = profile.gamma;
                 document.getElementById("play-after").checked = profile.playAfter;
-                document.getElementById("source-width").value = profile.sourceWidth;
-                document.getElementById("source-height").value = profile.sourceHeight;
                 document.getElementById("alternate-player").value = profile.alternatePlayer;
             }
         }
@@ -487,17 +543,36 @@
             document.getElementById("new-size").value = newSize;
         }
 
+        function disableButtons() {
+            let buttons = document.getElementsByTagName("button");
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = true;
+            }
+        }
+
+        function enableButtons() {
+            let buttons = document.getElementsByTagName("button");
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].disabled = false;
+            }
+        }
+
         let profiles;
 
+        disableButtons();
         fetch('{{.FrontendUri}}/checkffmpeg')
             .then(function(response) {
+                enableButtons();
                 return response.json();
             })
             .then(function(responseJson) {
                 let message = "";
 
-                if (responseJson.FFmpegExists === false || responseJson.FFplayExists === false) {
-                    message = 'Either FFmpeg or FFplay is missing, please download official releases and include them in the same directory as ffmpeg-clipper or add them to your OS PATH. https://ffmpeg.org/download.html';
+                if (responseJson.FFmpegExists === false ||
+                    responseJson.FFplayExists === false ||
+                    responseJson.FFprobeExists === false
+                ) {
+                    message = 'Either FFmpeg or FFplay or FFprobe is missing, please download official releases and include them in the same directory as ffmpeg-clipper or add them to your OS PATH. https://ffmpeg.org/download.html';
                 }
 
                 if (message !== "") {
@@ -505,7 +580,6 @@
                 } else {
                     getConfig();
                     getAvailableVideos();
-                    calculateScale();
                 }
             }
         );

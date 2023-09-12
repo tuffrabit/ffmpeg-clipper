@@ -26,8 +26,6 @@ type ClipProfileJson struct {
 	Brightness      float32 `json:"brightness"`
 	Gamma           float32 `json:"gamma"`
 	PlayAfter       bool    `json:"playAfter"`
-	SourceWidth     int     `json:"sourceWidth"`
-	SourceHeight    int     `json:"sourceHeight"`
 	AlternatePlayer string  `json:"alternatePlayer"`
 }
 
@@ -152,8 +150,6 @@ func generateDefaultConfigJson() ConfigJson {
 		Brightness:      0,
 		Gamma:           1,
 		PlayAfter:       true,
-		SourceWidth:     2560,
-		SourceHeight:    1440,
 		AlternatePlayer: "",
 	}
 
@@ -167,8 +163,6 @@ func generateDefaultConfigJson() ConfigJson {
 		Brightness:      0.1,
 		Gamma:           1,
 		PlayAfter:       true,
-		SourceWidth:     2560,
-		SourceHeight:    1440,
 		AlternatePlayer: "",
 	}
 
@@ -182,8 +176,6 @@ func generateDefaultConfigJson() ConfigJson {
 		Brightness:      0,
 		Gamma:           1,
 		PlayAfter:       true,
-		SourceWidth:     2560,
-		SourceHeight:    1440,
 		AlternatePlayer: "",
 	}
 
@@ -197,8 +189,6 @@ func generateDefaultConfigJson() ConfigJson {
 		Brightness:      0,
 		Gamma:           1,
 		PlayAfter:       true,
-		SourceWidth:     2560,
-		SourceHeight:    1440,
 		AlternatePlayer: "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
 	}
 
@@ -212,8 +202,6 @@ func generateDefaultConfigJson() ConfigJson {
 		Brightness:      0,
 		Gamma:           1,
 		PlayAfter:       true,
-		SourceWidth:     2560,
-		SourceHeight:    1440,
 		AlternatePlayer: "C:\\Program Files\\MPC-BE x64\\mpc-be64.exe",
 	}
 

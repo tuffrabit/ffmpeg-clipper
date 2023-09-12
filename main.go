@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"ffmpeg-clipper/config"
 	"ffmpeg-clipper/html"
 	"fmt"
@@ -122,8 +123,9 @@ func CheckFFmpeg(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	resultBytes, err := json.Marshal(result)
 	if err != nil {
-		log.Printf("main.CheckFFmpeg: could not marshal struct to json: %v", err)
-		fmt.Printf("{\"error\": \"main.CheckFFmpeg: could not marshal struct to json\"}")
+		message := fmt.Sprintf("main.CheckFFmpeg: could not marshal struct to json: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 	} else {
 		fmt.Fprint(w, string(resultBytes))
 	}
@@ -140,8 +142,9 @@ func GetAvailableVideos(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	var availableVideos []string
 	dirEntries, err := os.ReadDir("./")
 	if err != nil {
-		log.Printf("main.GetAvailableVideos: could not list directory: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.GetAvailableVideos: could not list directory\"}")
+		message := fmt.Sprintf("main.GetAvailableVideos: could not list directory: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
@@ -169,8 +172,9 @@ func GetAvailableVideos(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 
 	resultBytes, err := json.Marshal(result)
 	if err != nil {
-		log.Printf("main.GetAvailableVideos: could not marshal struct to json: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.GetAvailableVideos: could not marshal struct to json\"}")
+		message := fmt.Sprintf("main.GetAvailableVideos: could not marshal struct to json: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 	} else {
 		fmt.Fprint(w, string(resultBytes))
 	}
@@ -184,8 +188,9 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 
 	_, err := os.Stat(video)
 	if err != nil {
-		log.Printf("main.GetVideoDetails: %v does not exist: %v", video, err)
-		fmt.Fprint(w, "{\"error\": \"main.GetVideoDetails: requested video file does not exist\"}")
+		message := fmt.Sprintf("main.GetVideoDetails: %v does not exist: %v", video, err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
@@ -203,9 +208,9 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	)
 	output, err := runSystemCommand(cmd)
 	if err != nil {
-		log.Printf("main.GetVideoDetails: ffprobe failed: %v", err)
-		log.Printf("main.GetVideoDetails: ffprobe failed: %v", output)
-		fmt.Fprint(w, "{\"error\": \"main.GetVideoDetails: ffprobe failed\"}")
+		message := fmt.Sprintf("main.GetVideoDetails: ffprobe failed\nstderr: %v\nerr: %v", output, err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
@@ -217,59 +222,76 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 
 	resultBytes, err := json.Marshal(result)
 	if err != nil {
-		log.Printf("main.GetVideoDetails: could not marshal struct to json: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.GetVideoDetails: could not marshal struct to json\"}")
+		message := fmt.Sprintf("main.GetVideoDetails: could not marshal struct to json: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 	} else {
 		fmt.Fprint(w, string(resultBytes))
 	}
 }
 
 func GetConfig(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+
 	resultBytes, err := json.Marshal(configJson)
 	if err != nil {
-		log.Printf("main.GetConfig: could not marshal struct to json: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.GetConfig: could not marshal struct to json\"}")
+		message := fmt.Sprintf("main.GetConfig: could not marshal struct to json: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 	} else {
 		fmt.Fprint(w, string(resultBytes))
 	}
 }
 
 func SaveProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("main.SaveProfile: could not read request body: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.SaveProfile: could not read request body\"}")
+		message := fmt.Sprintf("main.SaveProfile: could not read request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
 	payloadJson := config.ClipProfileJson{}
 	err = json.Unmarshal(bodyBytes, &payloadJson)
 	if err != nil {
-		log.Printf("main.SaveProfile: could not json marshal request body: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.SaveProfile: could not json marshal request body\"}")
+		message := fmt.Sprintf("main.SaveProfile: could not json marshal request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
 	err = config.SaveProfile(&payloadJson)
 	if err != nil {
-		log.Printf("main.SaveProfile: could not save profile: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.SaveProfile: could not save profile\"}")
+		message := fmt.Sprintf("main.SaveProfile: could not save profile: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
 	configJson, err = config.GetConfig()
 	if err != nil {
-		log.Fatalf("main.SaveProfile: could not load updated config: %v", err)
+		message := fmt.Sprintf("main.SaveProfile: could not load updated config: %v", err)
+		fmt.Fprint(w, generateErrorJson(message))
+		log.Fatalln(message)
 	}
 
 	fmt.Fprint(w, "{}")
 }
 
 func DeleteProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("main.DeleteProfile: could not read request body: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.DeleteProfile: could not read request body\"}")
+		message := fmt.Sprintf("main.DeleteProfile: could not read request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
@@ -278,21 +300,25 @@ func DeleteProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	}{}
 	err = json.Unmarshal(bodyBytes, &payloadJson)
 	if err != nil {
-		log.Printf("main.DeleteProfile: could not json marshal request body: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.DeleteProfile: could not json marshal request body\"}")
+		message := fmt.Sprintf("main.DeleteProfile: could not json marshal request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
 	err = config.DeleteProfile(payloadJson.ProfileName)
 	if err != nil {
-		log.Printf("main.DeleteProfile: could not delete profile: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.DeleteProfile: could not delete profile\"}")
+		message := fmt.Sprintf("main.DeleteProfile: could not delete profile: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
 	configJson, err = config.GetConfig()
 	if err != nil {
-		log.Fatalf("main.DeleteProfile: could not load updated config: %v", err)
+		message := fmt.Sprintf("main.DeleteProfile: could not load updated config: %v", err)
+		fmt.Fprint(w, generateErrorJson(message))
+		log.Fatalln(message)
 	}
 
 	fmt.Fprint(w, "{}")
@@ -304,8 +330,9 @@ func PlayVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("main.PlayVideo: could not read request body: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.PlayVideo: could not read request body\"}")
+		message := fmt.Sprintf("main.PlayVideo: could not read request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
@@ -315,42 +342,40 @@ func PlayVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}{}
 	err = json.Unmarshal(bodyBytes, &payloadJson)
 	if err != nil {
-		log.Printf("main.PlayVideo: could not json marshal request body: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.PlayVideo: could not json marshal request body\"}")
+		message := fmt.Sprintf("main.PlayVideo: could not json marshal request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
 	_, err = os.Stat(payloadJson.Video)
 	if err != nil {
-		log.Printf("main.PlayVideo: %v does not exist: %v", payloadJson.Video, err)
-		fmt.Fprint(w, "{\"error\": \"main.PlayVideo: requested video file does not exist\"}")
+		message := fmt.Sprintf("main.PlayVideo: %v does not exist: %v", payloadJson.Video, err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
-	if payloadJson.AlternatePlayer != "" {
-		currentDir, err := os.Getwd()
-		if err != nil {
-			log.Printf("main.PlayVideo: could not get current dir: %v", err)
-			fmt.Fprint(w, "{\"error\": \"main.PlayVideo: could not get current dir\"}")
-			return
-		}
-
-		video := filepath.Join(currentDir, payloadJson.Video)
-		cmd := exec.Command(payloadJson.AlternatePlayer, video)
-		runSystemCommand(cmd)
-	} else {
-		cmd := exec.Command(ffplayPath, payloadJson.Video)
-		runSystemCommand(cmd)
+	err = playVideoFile(payloadJson.Video, payloadJson.AlternatePlayer)
+	if err != nil {
+		message := fmt.Sprintf("main.PlayVideo: could not play video: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
+		return
 	}
 
 	fmt.Fprint(w, "{}")
 }
 
 func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("main.ClipVideo: could not read request body: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.ClipVideo: could not read request body\"}")
+		message := fmt.Sprintf("main.ClipVideo: could not read request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
@@ -371,8 +396,9 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	err = json.Unmarshal(bodyBytes, &payloadJson)
 	if err != nil {
-		log.Printf("main.ClipVideo: could not json marshal request body: %v", err)
-		fmt.Fprint(w, "{\"error\": \"main.ClipVideo: could not json marshal request body\"}")
+		message := fmt.Sprintf("main.ClipVideo: could not json marshal request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
@@ -381,6 +407,10 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	newVideoName := fmt.Sprintf("%v_clip%v%v", videoName, getRandomString(), videoExtension)
 
 	cmd := exec.Command(ffmpegPath,
+		"-nostats",
+		"-hide_banner",
+		"-loglevel",
+		"error",
 		"-ss",
 		payloadJson.StartTime,
 		"-to",
@@ -403,34 +433,81 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		),
 		newVideoName,
 	)
-	runSystemCommand(cmd)
+	cmdOutput, err := runSystemCommand(cmd)
+	if err != nil {
+		fmt.Fprint(w, generateErrorJson(cmdOutput))
+		return
+	}
 
 	_, err = os.Stat(newVideoName)
 	if err != nil {
-		log.Printf("main.ClipVideo: new video clip %v was not created: %v", newVideoName, err)
-		fmt.Fprint(w, "{\"error\": \"main.ClipVideo: new video clip was not created\"}")
+		message := fmt.Sprintf("main.ClipVideo: new video clip %v was not created: %v", newVideoName, err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
 
 	if payloadJson.PlayAfter {
-		if payloadJson.AlternatePlayer != "" {
-			currentDir, err := os.Getwd()
-			if err != nil {
-				log.Printf("main.ClipVideo: could not get current dir: %v", err)
-				fmt.Fprint(w, "{\"error\": \"main.ClipVideo: could not get current dir\"}")
-				return
-			}
-
-			video := filepath.Join(currentDir, newVideoName)
-			cmd := exec.Command(payloadJson.AlternatePlayer, video)
-			runSystemCommand(cmd)
-		} else {
-			cmd := exec.Command(ffplayPath, newVideoName)
-			runSystemCommand(cmd)
+		err = playVideoFile(newVideoName, payloadJson.AlternatePlayer)
+		if err != nil {
+			message := fmt.Sprintf("main.ClipVideo: could not play new video: %v", err)
+			log.Println(message)
+			fmt.Fprint(w, generateErrorJson(message))
+			return
 		}
 	}
 
 	fmt.Fprint(w, "{\"newVideoName\": \""+newVideoName+"\"}")
+}
+
+func playVideoFile(videoFileName string, alternatePlayerPath string) error {
+	var cmd *exec.Cmd
+
+	if alternatePlayerPath != "" {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("main.playVideoFile: could not get current dir: %w", err)
+		}
+
+		video := filepath.Join(currentDir, videoFileName)
+		cmd = exec.Command(alternatePlayerPath, video)
+	} else {
+		cmd = exec.Command(ffplayPath,
+			"-nostats",
+			"-hide_banner",
+			"-loglevel",
+			"error",
+			videoFileName,
+		)
+	}
+
+	cmdOutput, err := runSystemCommand(cmd)
+	if err != nil {
+		if err.Error() != cmdOutput {
+			return fmt.Errorf("main.playVideoFile: could not play video\nstderr: %verr: %w", cmdOutput, err)
+		} else {
+			return fmt.Errorf("main.playVideoFile: could not play video\nerr: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func generateErrorJson(errorMessage string) string {
+	errorJson := struct {
+		Error string
+	}{
+		Error: errorMessage,
+	}
+
+	errorJsonBytes, err := json.Marshal(errorJson)
+	if err != nil {
+		log.Printf("main.generateErrorJson: Failed to marshal error message to json: %v", err)
+		log.Printf("original error message: %v", errorMessage)
+		return "{\"error\": \"Could not generate full error message. See console for details.\"}"
+	}
+
+	return string(errorJsonBytes)
 }
 
 func runSystemCommand(cmd *exec.Cmd) (string, error) {
@@ -446,13 +523,25 @@ func runSystemCommand(cmd *exec.Cmd) (string, error) {
 	outString := cmdOut.String()
 	errString := cmdErr.String()
 	if err != nil || errString != "" {
-		log.Printf("%v stdout: %v", cmdString, outString)
-		log.Printf("%v stderr: %v", cmdString, errString)
+		if outString != "" {
+			log.Printf("%v stdout: %v", cmdString, outString)
+		}
+
+		if errString != "" {
+			log.Printf("%v stderr: %v", cmdString, errString)
+
+			if err == nil {
+				err = errors.New(errString)
+			}
+		}
+
 		log.Println(err)
 
 		return errString, err
 	} else {
-		log.Printf("%v stdout: %v", cmdString, outString)
+		if outString != "" {
+			log.Printf("%v stdout: %v", cmdString, outString)
+		}
 
 		return outString, nil
 	}

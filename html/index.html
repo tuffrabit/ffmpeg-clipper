@@ -158,8 +158,8 @@
                     return response.json();
                 })
                 .then(function(responseJson) {
-                    if (responseJson.error) {
-                        addOutput(responseJson.error);
+                    if (responseJson.Error) {
+                        addOutput("Play error: " + responseJson.Error);
                     }
                 });
             }
@@ -199,8 +199,8 @@
                 return response.json();
             })
             .then(function(responseJson) {
-                if (responseJson.error) {
-                    addOutput(responseJson.error);
+                if (responseJson.Error) {
+                    addOutput("Clip error: " + responseJson.Error);
                 } else {
                     addOutput(responseJson.newVideoName + " was created!");
                     getAvailableVideos();
@@ -224,8 +224,8 @@
                 return response.json();
             })
             .then(function(responseJson) {
-                if (responseJson.error) {
-                    addOutput(responseJson.error);
+                if (responseJson.Error) {
+                    addOutput("Get videos error: " + responseJson.Error);
                 } else {
                     dropdown.innerHTML = "";
 
@@ -260,8 +260,8 @@
                     return response.json();
                 })
                 .then(function(responseJson) {
-                    if (responseJson.error) {
-                        addOutput(responseJson.error);
+                    if (responseJson.Error) {
+                        addOutput("Get video details error: " + responseJson.Error);
                     } else {
                         let resolution = responseJson.Resolution;
 
@@ -296,8 +296,8 @@
                 return response.json();
             })
             .then(function(responseJson) {
-                if (responseJson.error) {
-                    addOutput(responseJson.error);
+                if (responseJson.Error) {
+                    addOutput("Get config error: " + responseJson.Error);
                 } else {
                     let dropdown = document.getElementById("profiles");
                     dropdown.innerHTML = "";
@@ -369,8 +369,8 @@
                         return response.json();
                     })
                     .then(function(responseJson) {
-                        if (responseJson.error) {
-                            addOutput(responseJson.error);
+                        if (responseJson.Error) {
+                            addOutput("Delete profile error: " + responseJson.Error);
                         } else {
                             addOutput(profile.profileName + " was deleted!");
                             getConfig();
@@ -400,8 +400,8 @@
                     return response.json();
                 })
                 .then(function(responseJson) {
-                    if (responseJson.error) {
-                        addOutput(responseJson.error);
+                    if (responseJson.Error) {
+                        addOutput("Save profile error: " + responseJson.Error);
                     } else {
                         addOutput(profileName + " was saved!");
                         getConfig();
@@ -566,20 +566,24 @@
                 return response.json();
             })
             .then(function(responseJson) {
-                let message = "";
-
-                if (responseJson.FFmpegExists === false ||
-                    responseJson.FFplayExists === false ||
-                    responseJson.FFprobeExists === false
-                ) {
-                    message = 'Either FFmpeg or FFplay or FFprobe is missing, please download official releases and include them in the same directory as ffmpeg-clipper or add them to your OS PATH. https://ffmpeg.org/download.html';
-                }
-
-                if (message !== "") {
-                    addOutput(message);
+                if (responseJson.Error) {
+                        addOutput("Check FFmpeg error: " + responseJson.Error);
                 } else {
-                    getConfig();
-                    getAvailableVideos();
+                    let message = "";
+
+                    if (responseJson.FFmpegExists === false ||
+                        responseJson.FFplayExists === false ||
+                        responseJson.FFprobeExists === false
+                    ) {
+                        message = 'Either FFmpeg or FFplay or FFprobe is missing, please download official releases and include them in the same directory as ffmpeg-clipper or add them to your OS PATH. https://ffmpeg.org/download.html';
+                    }
+
+                    if (message !== "") {
+                        addOutput(message);
+                    } else {
+                        getConfig();
+                        getAvailableVideos();
+                    }
                 }
             }
         );

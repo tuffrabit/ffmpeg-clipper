@@ -46,6 +46,7 @@ func main() {
 	router.POST("/saveprofile", SaveProfile)
 	router.DELETE("/deleteprofile", DeleteProfile)
 	router.POST("/playvideo", PlayVideo)
+	router.DELETE("/deletevideo", DeleteVideo)
 	router.POST("/clipvideo", ClipVideo)
 
 	listener, err := net.Listen("tcp", ":0")
@@ -367,6 +368,48 @@ func PlayVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fmt.Fprint(w, "{}")
 }
 
+func DeleteVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	header := w.Header()
+	header.Set("Content-Type", "application/json")
+
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		message := fmt.Sprintf("main.DeleteVideo: could not read request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
+		return
+	}
+
+	payloadJson := struct {
+		Video string `json:"video"`
+	}{}
+	err = json.Unmarshal(bodyBytes, &payloadJson)
+	if err != nil {
+		message := fmt.Sprintf("main.DeleteVideo: could not json marshal request body: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
+		return
+	}
+
+	_, err = os.Stat(payloadJson.Video)
+	if err != nil {
+		message := fmt.Sprintf("main.DeleteVideo: %v does not exist: %v", payloadJson.Video, err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
+		return
+	}
+
+	err = os.Remove(payloadJson.Video)
+	if err != nil {
+		message := fmt.Sprintf("main.DeleteVideo: could not delete video file: %v", err)
+		log.Println(message)
+		fmt.Fprint(w, generateErrorJson(message))
+		return
+	}
+
+	fmt.Fprint(w, "{}")
+}
+
 func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	header := w.Header()
 	header.Set("Content-Type", "application/json")
@@ -435,6 +478,11 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	)
 	cmdOutput, err := runSystemCommand(cmd)
 	if err != nil {
+		_, err = os.Stat(newVideoName)
+		if err == nil {
+			os.Remove(newVideoName)
+		}
+
 		fmt.Fprint(w, generateErrorJson(cmdOutput))
 		return
 	}

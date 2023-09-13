@@ -20,6 +20,7 @@
                     <select id="available-videos" name="available-videos" size="" style="max-height: 200px;"></select> 
                 </div>
                 <button onclick="playVideo()">Play Video</button>
+                <button onclick="deleteVideo()">Delete Video</button>
                 <div>
                     <label for="alternate-player">Alternate Player</label>
                     <input id="alternate-player" type="text" style="width: 100%" /> 
@@ -58,20 +59,20 @@
                     <input id="quality-target" type="text" value="24" onchange="validateFloat(event, 0, 51)" />
                 </span>
                 <span>
-                    <label for="saturation">Saturation (0.0 to 3.0)</label>
-                    <input id="saturation" type="text" value="1" onchange="validateFloat(event, 0, 3)" />
+                    <label for="saturation" title="Default 1">Saturation (0.0 to 3.0)</label>
+                    <input id="saturation" type="text" value="1" onchange="validateFloat(event, 0, 3)" title="Default 1" />
                 </span>
                 <span>
-                    <label for="contrast">Contrast (-1000.0 to 1000.0)</label>
-                    <input id="contrast" type="text" value="1" onchange="validateFloat(event, -1000, 1000)" />
+                    <label for="contrast" title="Default 1">Contrast (-1000.0 to 1000.0)</label>
+                    <input id="contrast" type="text" value="1" onchange="validateFloat(event, -1000, 1000)" title="Default 1" />
                 </span>
                 <span>
-                    <label for="brightness">Brightness (-1.0 to 1.0)</label>
-                    <input id="brightness" type="text" value="0" onchange="validateFloat(event, -1, 1)" />
+                    <label for="brightness" title="Default 0">Brightness (-1.0 to 1.0)</label>
+                    <input id="brightness" type="text" value="0" onchange="validateFloat(event, -1, 1)" title="Default 0" />
                 </span>
                 <span>
-                    <label for="gamma">Gamma (0.1 to 10.0)</label>
-                    <input id="gamma" type="text" value="1" onchange="validateFloat(event, .1, 10)" />
+                    <label for="gamma" title="Default 1">Gamma (0.1 to 10.0)</label>
+                    <input id="gamma" type="text" value="1" onchange="validateFloat(event, .1, 10)" title="Default 1" />
                 </span>
                 <span>
                     <label for="play-after">Play clip when done</label>
@@ -144,9 +145,43 @@
                     "alternatePlayer": document.getElementById("alternate-player").value
                 };
 
-                disableButtons();
                 fetch('{{.FrontendUri}}/playvideo/', {
                     method: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(responseJson) {
+                    if (responseJson.Error) {
+                        addOutput("Play error: " + responseJson.Error);
+                    }
+                });
+            }
+        }
+
+        function deleteVideo() {
+            let dropdown = document.getElementById("available-videos");
+            let video = dropdown.options[dropdown.selectedIndex];
+
+            if (video) {
+                let confirmed = confirm("Are you sure?");
+
+                if (!confirmed) {
+                    return;
+                }
+
+                let payload = {
+                    "video": video.value
+                };
+
+                disableButtons();
+                fetch('{{.FrontendUri}}/deletevideo/', {
+                    method: "DELETE",
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json'
@@ -159,7 +194,10 @@
                 })
                 .then(function(responseJson) {
                     if (responseJson.Error) {
-                        addOutput("Play error: " + responseJson.Error);
+                        addOutput("Delete video error: " + responseJson.Error);
+                        }else {
+                        addOutput(video.value + " was deleted!");
+                        getAvailableVideos();
                     }
                 });
             }

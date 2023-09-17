@@ -46,7 +46,6 @@ func main() {
 	router.POST("/saveprofile", SaveProfile)
 	router.DELETE("/deleteprofile", DeleteProfile)
 	router.POST("/playvideo", PlayVideo)
-	//router.GET("/streamvideo/*filepath", StreamVideo)
 	router.DELETE("/deletevideo", DeleteVideo)
 	router.POST("/clipvideo", ClipVideo)
 	router.ServeFiles("/streamvideo/*filepath", http.Dir("."))
@@ -58,7 +57,7 @@ func main() {
 
 	port := listener.Addr().(*net.TCPAddr).Port
 	frontendUri = "http://localhost:" + strconv.Itoa(port)
-	indexHtmlContent, err = html.GetIndexHtmlContent(frontendUri)
+	indexHtmlContent, err = html.GetIndex2HtmlContent(frontendUri)
 	if err != nil {
 		log.Fatalf("main.main: could not load index html: %v", err)
 	}
@@ -216,6 +215,10 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		fmt.Fprint(w, generateErrorJson(message))
 		return
 	}
+
+	output = strings.TrimSuffix(output, "\r\n")
+	output = strings.TrimSuffix(output, "\n")
+	output = strings.TrimSuffix(output, "\r")
 
 	result := struct {
 		Resolution string

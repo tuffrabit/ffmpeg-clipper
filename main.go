@@ -46,8 +46,10 @@ func main() {
 	router.POST("/saveprofile", SaveProfile)
 	router.DELETE("/deleteprofile", DeleteProfile)
 	router.POST("/playvideo", PlayVideo)
+	//router.GET("/streamvideo/*filepath", StreamVideo)
 	router.DELETE("/deletevideo", DeleteVideo)
 	router.POST("/clipvideo", ClipVideo)
+	router.ServeFiles("/streamvideo/*filepath", http.Dir("."))
 
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
@@ -493,16 +495,6 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		log.Println(message)
 		fmt.Fprint(w, generateErrorJson(message))
 		return
-	}
-
-	if payloadJson.PlayAfter {
-		err = playVideoFile(newVideoName, payloadJson.AlternatePlayer)
-		if err != nil {
-			message := fmt.Sprintf("main.ClipVideo: could not play new video: %v", err)
-			log.Println(message)
-			fmt.Fprint(w, generateErrorJson(message))
-			return
-		}
 	}
 
 	fmt.Fprint(w, "{\"newVideoName\": \""+newVideoName+"\"}")

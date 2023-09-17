@@ -22,10 +22,21 @@
                 <button onclick="playVideo()">Play Video</button>
                 <button onclick="deleteVideo()">Delete Video</button>
                 <div>
-                    <label for="alternate-player">Alternate Player</label>
-                    <input id="alternate-player" type="text" style="width: 100%" /> 
+                    <label for="player-browser">Use Browser Player</label>
+                    <input type="radio" id="player-browser" name="video-player" value="browser" checked="checked" />
+                    <p style="margin: 0">This option only supports .mp4, .webm, and .ogg videos.</p>
                 </div>
-                <p>Full path to valid video player executable. ffmpeg-clipper assumes the alternate player executable simply takes a video file path as its main argument.</p>
+                <div>
+                    <label for="player-ffplay">Use FFplay</label>
+                    <input type="radio" id="player-ffplay" name="video-player" value="ffplay" />
+                    <p style="margin: 0">Super basic, but should be universally available.</p>
+                </div>
+                <div>
+                    <label for="player-alternate">Use Alternate</label>
+                    <input type="radio" id="player-alternate" name="video-player" value="alternate" />
+                    <input id="alternate-player" type="text" style="width: 100%" />
+                    <p style="margin: 0">Full path to valid video player executable. ffmpeg-clipper assumes the alternate player executable simply takes a video file path as its main argument.</p>
+                </div>
             </div>
             <div style="display: flex;flex-direction: column;gap: 10px">
                 <span>
@@ -107,12 +118,90 @@
             </div>
         </div>
         <div style="display: flex;flex-direction: column;margin: 13px 17px 0 17px">
+            <div id="browser-player-container" style="display: none">
+                <div style="display: flex;flex-direction: row;margin: 13px 17px 0 17px">
+                    <button onclick="setClipStart()">Set Clip Start</button>
+                    <button onclick="setClipStop()">Set Clip Stop</button>
+                    <button onclick="closeBrowserPlayer()">Close Player</button>
+                    <h4 id="video-title" style="margin: 0"></h4>
+                </div>
+                <video id="video-player" controls autoplay></video>
+                <div style="display: flex;flex-direction: row;margin: 0 17px 13px 17px">
+                    <button onclick="setClipStart()">Set Clip Start</button>
+                    <button onclick="setClipStop()">Set Clip Stop</button>
+                    <button onclick="closeBrowserPlayer()">Close Player</button>
+                </div>
+            </div>
+            
             <label for="output">Messages</label>
             <button onclick="clearOutput()" style="width: 81px;">Clear</button>
             <textarea id="output" style="width: 100%;" rows="15" readonly></textarea>
         </div>
     </div>
     <script>
+        function closeBrowserPlayer() {
+            document.getElementById('video-player').pause();
+            document.getElementById('browser-player-container').style.display = "none";
+        }
+
+        function formatFFmpegTime(time) {
+            time = time.toString();
+
+            if (time.length < 2) {
+                time = '0' + time;
+            }
+
+            return time;
+        }
+
+        function getCurrentFFmpegTime() {
+            let videoPlayer = document.getElementById('video-player');
+            let currentTime = videoPlayer.currentTime;
+            let ffmpegTime = null;
+            let hours = 0;
+            let minutes = 0;
+            let seconds = 0;
+
+            if (currentTime > 0) {
+                if (currentTime < 60) {
+                    seconds = parseInt(currentTime);
+                } else if (currentTime < 3600) {
+                    minutes = parseInt(currentTime / 60);
+                    seconds = parseInt(currentTime % 60);
+                } else {
+                    hours = parseInt(currentTime / 3600);
+                    let remainingSeconds = parseInt(currentTime % 3600);
+
+                    if (remainingSeconds < 60) {
+                        seconds = remainingSeconds;
+                    } else {
+                        minutes = parseInt(remainingSeconds / 60);
+                        seconds = parseInt(remainingSeconds % 60);
+                    }
+                }
+            }
+
+            ffmpegTime = formatFFmpegTime(hours) + ':' + formatFFmpegTime(minutes) + ':' + formatFFmpegTime(seconds);
+
+            return ffmpegTime;
+        }
+
+        function setClipStart() {
+            let ffmpegTime = getCurrentFFmpegTime();
+
+            if (ffmpegTime !== null) {
+                document.getElementById("start-time").value = ffmpegTime;
+            }
+        }
+
+        function setClipStop() {
+            let ffmpegTime = getCurrentFFmpegTime();
+
+            if (ffmpegTime !== null) {
+                document.getElementById("end-time").value = ffmpegTime;
+            }
+        }
+
         function getBasicSettingsPayload() {
             let encodingPresetDropdown = document.getElementById("encoding-preset");
             let payload = null;
@@ -135,13 +224,53 @@
             return payload;
         }
 
-        function playVideo() {
+        function streamVideo(videoName) {
+            getVideoDetails(videoName, function(video, width, height) {
+                let browserPlayerContainer = document.getElementById('browser-player-container');
+                let videoPlayer = document.getElementById('video-player');
+                
+                browserPlayerContainer.style.display = "block";
+                const ratio = width / height;
+                const styles = window.getComputedStyle(browserPlayerContainer);
+                const containerWidth = (browserPlayerContainer.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight)) / 2;
+
+                videoPlayer.width = containerWidth;
+                videoPlayer.height = containerWidth / ratio;
+                document.getElementById('video-title').innerText = video;
+                videoPlayer.src = '{{.FrontendUri}}/streamvideo/' + encodeURIComponent(video);
+                document.getElementById("available-videos").value = video;
+            });
+        }
+
+        function playVideo(videoName) {
             let dropdown = document.getElementById("available-videos");
-            let video = dropdown.options[dropdown.selectedIndex];
+            let video = "";
+
+            if (videoName) {
+                video = videoName;
+            } else {
+                if (dropdown.options[dropdown.selectedIndex]) {
+                    video = dropdown.options[dropdown.selectedIndex].value;
+                }
+            }
 
             if (video) {
+                let videoPlayerRadio = document.querySelector('input[name="video-player"]:checked');
+                let videoPlayer = null;
+
+                if (videoPlayerRadio) {
+                    videoPlayer = videoPlayerRadio.value;
+                } else {
+                    videoPlayer = "browser";
+                }
+
+                if (videoPlayer === "browser") {
+                    streamVideo(video);
+                    return;
+                }
+
                 let payload = {
-                    "video": video.value,
+                    "video": video,
                     "alternatePlayer": document.getElementById("alternate-player").value
                 };
 
@@ -242,6 +371,11 @@
                 } else {
                     addOutput(responseJson.newVideoName + " was created!");
                     getAvailableVideos();
+                    
+                    if (payload.playAfter) {
+                        addOutput("Playing: " + responseJson.newVideoName);
+                        playVideo(responseJson.newVideoName);
+                    }
                 }
             });
         }
@@ -286,13 +420,21 @@
             });
         }
 
-        function getVideoDetails() {
+        function getVideoDetails(videoName, callback) {
             let dropdown = document.getElementById("available-videos");
-            let video = dropdown.options[dropdown.selectedIndex];
+            let video = "";
+
+            if (videoName) {
+                video = videoName;
+            } else {
+                if (dropdown.options[dropdown.selectedIndex]) {
+                    video = dropdown.options[dropdown.selectedIndex].value;
+                }
+            }
 
             if (video) {
                 disableButtons();
-                fetch('{{.FrontendUri}}/getvideodetails/' + encodeURIComponent(video.value))
+                fetch('{{.FrontendUri}}/getvideodetails/' + encodeURIComponent(video))
                 .then(function(response) {
                     enableButtons();
                     return response.json();
@@ -310,7 +452,12 @@
                                 document.getElementById("source-width").value = resolutionFields[0];
                                 document.getElementById("source-height").value = resolutionFields[1];
                                 calculateScale();
-                                addOutput("Video details retrieved for " + video.value);
+
+                                if (callback) {
+                                    callback(video, resolutionFields[0], resolutionFields[1]);
+                                }
+
+                                addOutput("Video details retrieved for " + video);
                             }
                         }
                     }
@@ -423,6 +570,7 @@
                 let payload = getBasicSettingsPayload();
                 payload.profileName = profileName;
                 payload.alternatePlayer = document.getElementById("alternate-player").value;
+                payload.videoPlayer = document.querySelector('input[name="video-player"]:checked').value;
 
                 disableButtons();
                 fetch('{{.FrontendUri}}/saveprofile', {
@@ -479,6 +627,15 @@
                 document.getElementById("brightness").value = profile.brightness;
                 document.getElementById("gamma").value = profile.gamma;
                 document.getElementById("play-after").checked = profile.playAfter;
+
+                if (profile.videoPlayer === "browser") {
+                    document.getElementById("player-browser").checked = true;
+                } else if (profile.videoPlayer === "ffplay") {
+                    document.getElementById("player-ffplay").checked = true;
+                } else if (profile.videoPlayer === "alternate") {
+                    document.getElementById("player-alternate").checked = true;
+                }
+
                 document.getElementById("alternate-player").value = profile.alternatePlayer;
             }
         }

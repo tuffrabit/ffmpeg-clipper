@@ -1,5 +1,6 @@
 # ffmpeg-clipper
 
+## TODO
 - return new filename - done
 - scroll on list box - done
 - error/message close button - done
@@ -17,7 +18,11 @@
 - add default eq filter value text - done
 - don't freeze frontend on video play - done
 - add delete video button - done
-- marshal json responses
-- big code cleanup/refactor
+- add help - done
 - clean up failed clips - done
 - create actual readme
+- add linux / macos support
+- sub second start and stop support
+- marshal json responses
+- big code cleanup/refactor
+- support for other encoders

@@ -1,4 +1,5 @@
 function showOutput() {
+    document.getElementById('output-button').classList.remove('w3-red');
     document.getElementById('output-modal').style.display='block';
 }
 
@@ -22,10 +23,47 @@ function hideProfiles() {
     document.getElementById('profiles-modal').style.display='none';
 }
 
+function showVideosHelp() {
+    document.getElementById('videos-help-modal').style.display='block';
+}
+
+function hideVideosHelp() {
+    document.getElementById('videos-help-modal').style.display='none';
+}
+
+function showCalculatorHelp() {
+    document.getElementById('calculator-help-modal').style.display='block';
+}
+
+function hideCalculatorHelp() {
+    document.getElementById('calculator-help-modal').style.display='none';
+}
+
+function showPlayerHelp() {
+    document.getElementById('player-help-modal').style.display='block';
+}
+
+function hidePlayerHelp() {
+    document.getElementById('player-help-modal').style.display='none';
+}
+
+function showClipHelp() {
+    document.getElementById('clip-help-modal').style.display='block';
+}
+
+function hideClipHelp() {
+    document.getElementById('clip-help-modal').style.display='none';
+}
+
 function addOutput(message) {
     let output = document.getElementById("output");
 
     output.value = output.value + message + '\n';
+}
+
+function addOutputError(message) {
+    document.getElementById('output-button').classList.add('w3-red');
+    addOutput(message);
 }
 
 function clearOutput() {
@@ -123,32 +161,20 @@ function getBasicSettingsPayload() {
             "playAfter": document.getElementById("play-after").checked
         };
     } catch(err) {
-        addOutput("Could not create request payload, err: " + err);
+        addOutputError("Could not create request payload, err: " + err);
     }
 
     return payload;
 }
 
+function closeVideo() {
+    document.getElementById('video-player').src = '';
+}
+
 function streamVideo(videoName) {
     getVideoDetails(videoName, function(video, width, height) {
-        //width = parseInt(width)
-        //height = parseInt(height)
-
-        //let browserPlayerContainer = document.getElementById('browser-player-container');
-        let videoPlayer = document.getElementById('video-player');
-        //const videoPlayerParent = videoPlayer.parentElement;
-        
-        //browserPlayerContainer.style.display = "block";
-        //const ratio = width / height;
-        //const styles = window.getComputedStyle(videoPlayerParent);
-        //const containerWidth = videoPlayerParent.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight) - parseFloat(styles.marginLeft) - parseFloat(styles.marginRight);
-        //const containerWidth = browserPlayerContainer.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
-        //const containerWidth = browserPlayerContainer.clientWidth;
-
-        //videoPlayer.width = containerWidth - 5;
-        //videoPlayer.height = containerWidth / ratio;
         document.getElementById('video-title').innerText = video;
-        videoPlayer.src = '{{.FrontendUri}}/streamvideo/' + encodeURIComponent(video);
+        document.getElementById('video-player').src = '{{.FrontendUri}}/streamvideo/' + encodeURIComponent(video);
         document.getElementById("available-videos").value = video;
     });
 }
@@ -198,7 +224,7 @@ function playVideo(videoName) {
         })
         .then(function(responseJson) {
             if (responseJson.Error) {
-                addOutput("Play error: " + responseJson.Error);
+                addOutputError("Play error: " + responseJson.Error);
             }
         });
     }
@@ -234,8 +260,8 @@ function deleteVideo() {
         })
         .then(function(responseJson) {
             if (responseJson.Error) {
-                addOutput("Delete video error: " + responseJson.Error);
-                }else {
+                addOutputError("Delete video error: " + responseJson.Error);
+            } else {
                 addOutput(video.value + " was deleted!");
                 getAvailableVideos();
             }
@@ -245,7 +271,7 @@ function deleteVideo() {
 
 function clipVideo() {
     if (document.getElementsByClassName("error").length > 0) {
-        addOutput("You have clip settings errors, fix them!");
+        addOutputError("You have clip settings errors, fix them!");
         return;
     }
 
@@ -253,7 +279,7 @@ function clipVideo() {
     let selectedVideo = videoDropdown.options[videoDropdown.selectedIndex];
 
     if (!selectedVideo) {
-        addOutput("You don't have a video selected.");
+        addOutputError("You don't have a video selected.");
         return;
     }
 
@@ -278,7 +304,7 @@ function clipVideo() {
     })
     .then(function(responseJson) {
         if (responseJson.Error) {
-            addOutput("Clip error: " + responseJson.Error);
+            addOutputError("Clip error: " + responseJson.Error);
         } else {
             addOutput(responseJson.newVideoName + " was created!");
             getAvailableVideos();
@@ -308,7 +334,7 @@ function getAvailableVideos() {
     })
     .then(function(responseJson) {
         if (responseJson.Error) {
-            addOutput("Get videos error: " + responseJson.Error);
+            addOutputError("Get videos error: " + responseJson.Error);
         } else {
             dropdown.innerHTML = "";
 
@@ -352,7 +378,7 @@ function getVideoDetails(videoName, callback) {
         })
         .then(function(responseJson) {
             if (responseJson.Error) {
-                addOutput("Get video details error: " + responseJson.Error);
+                addOutputError("Get video details error: " + responseJson.Error);
             } else {
                 let resolution = responseJson.Resolution;
 
@@ -393,7 +419,7 @@ function getConfig() {
     })
     .then(function(responseJson) {
         if (responseJson.Error) {
-            addOutput("Get config error: " + responseJson.Error);
+            addOutputError("Get config error: " + responseJson.Error);
         } else {
             let dropdown = document.getElementById("profiles");
             dropdown.innerHTML = "";
@@ -466,7 +492,7 @@ function deleteProfile() {
             })
             .then(function(responseJson) {
                 if (responseJson.Error) {
-                    addOutput("Delete profile error: " + responseJson.Error);
+                    addOutputError("Delete profile error: " + responseJson.Error);
                 } else {
                     addOutput(profile.profileName + " was deleted!");
                     getConfig();
@@ -498,7 +524,7 @@ function doSaveProfile(profileName) {
         })
         .then(function(responseJson) {
             if (responseJson.Error) {
-                addOutput("Save profile error: " + responseJson.Error);
+                addOutputError("Save profile error: " + responseJson.Error);
             } else {
                 addOutput(profileName + " was saved!");
                 getConfig();
@@ -664,7 +690,7 @@ fetch('{{.FrontendUri}}/checkffmpeg')
     })
     .then(function(responseJson) {
         if (responseJson.Error) {
-                addOutput("Check FFmpeg error: " + responseJson.Error);
+                addOutputError("Check FFmpeg error: " + responseJson.Error);
         } else {
             let message = "";
 
@@ -676,7 +702,7 @@ fetch('{{.FrontendUri}}/checkffmpeg')
             }
 
             if (message !== "") {
-                addOutput(message);
+                addOutputError(message);
             } else {
                 getConfig();
                 getAvailableVideos();

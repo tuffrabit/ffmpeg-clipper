@@ -23,7 +23,7 @@ Tool for making video clips. Download a executable from the releases and drop it
 - add delete video button - done
 - add help - done
 - clean up failed clips - done
-- create actual readme
+- create actual readme - done-ish
 - add linux / macos support
 - sub second start and stop support
 - marshal json responses

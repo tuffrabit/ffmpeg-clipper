@@ -106,6 +106,21 @@
                 </div>
             </div>
         </div>
+        <div id="encoder-fields-libx264" style="display:none">
+            {{.Libx264EncoderFieldsHtml}}
+        </div>
+        <div id="encoder-fields-libx265" style="display:none">
+            {{.Libx265EncoderFieldsHtml}}
+        </div>
+        <div id="encoder-fields-libaom-av1" style="display:none">
+            {{.LibaomAv1EncoderFieldsHtml}}
+        </div>
+        <div id="encoder-fields-h264_nvenc" style="display:none">
+            {{.NvencH264EncoderFieldHtml}}
+        </div>
+        <div id="encoder-fields-hevc_nvenc" style="display:none">
+            {{.NvencHevcEncoderFieldHtml}}
+        </div>
         <div class="w3-container w3-cell-row">
             <div class="w3-container w3-cell" style="min-width:320px;max-width:320px">
                 <div class="w3-card w3-display-container">
@@ -175,22 +190,14 @@
                         <input id="scale-factor" type="text" value="2.666" onchange="validateFloat(event, .01, 100);calculateScale();" class="w3-input w3-small" />
                     </div>
                     <div>
-                        <label for="encoding-preset" class="w3-small">Encoding Preset</label>
-                        <select id="encoding-preset" name="encoding-preset" class="w3-select w3-small">
-                            <option value="ultrafast">ultrafast</option>
-                            <option value="superfast">superfast</option>
-                            <option value="veryfast">veryfast</option>
-                            <option value="faster">faster</option>
-                            <option value="fast">fast</option>
-                            <option value="medium" selected="selected">medium</option>
-                            <option value="slow">slow</option>
-                            <option value="slower">slower</option>
-                            <option value="veryslow">veryslow</option>
+                        <label for="encoder" class="w3-small">Encoder</label>
+                        <select id="encoder" name="encoder" onchange="encoderChanged()" class="w3-select w3-small">
+                            <option value="libx264">CPU H.264</option>
+                            <option value="libx265">CPU H.265</option>
+                            <option value="libaom-av1">CPU AV1</option>
+                            <option value="h264_nvenc">Nvidia H.264</option>
+                            <option value="hevc_nvenc">Nvidia H.265</option>
                         </select> 
-                    </div>
-                    <div>
-                        <label for="quality-target" class="w3-small">Quality Target (0 to 51)</label>
-                        <input id="quality-target" type="text" value="24" onchange="validateFloat(event, 0, 51)" class="w3-input w3-small" />
                     </div>
                     <div>
                         <label for="saturation" title="Default 1" class="w3-small">Saturation (0.0 to 3.0)</label>

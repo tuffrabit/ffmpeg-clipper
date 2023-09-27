@@ -146,14 +146,12 @@ function playerSelected() {
 }
 
 function getBasicSettingsPayload() {
-    let encodingPresetDropdown = document.getElementById("encoding-preset");
     let payload = null;
 
     try {
         payload = {
             "scaleFactor": parseFloat(document.getElementById("scale-factor").value),
-            "encodingPreset": encodingPresetDropdown.options[encodingPresetDropdown.selectedIndex].value,
-            "qualityTarget": parseInt(document.getElementById("quality-target").value),
+            "encoder": document.getElementById("encoder").value,
             "saturation": parseFloat(document.getElementById("saturation").value),
             "contrast": parseFloat(document.getElementById("contrast").value),
             "brightness": parseFloat(document.getElementById("brightness").value),
@@ -283,11 +281,31 @@ function clipVideo() {
         return;
     }
 
+    let encoderFieldsContainer = document.getElementById('encoder-fields');
+    let encoderFields = Array.from(encoderFieldsContainer.getElementsByTagName('input'));
+    encoderFields = encoderFields.concat(Array.from(encoderFieldsContainer.getElementsByTagName('select')));
+
     let payload = getBasicSettingsPayload();
     payload.video = selectedVideo.value;
     payload.startTime = document.getElementById("start-time").value;
     payload.endTime = document.getElementById("end-time").value;
     payload.alternatePlayer = document.getElementById("alternate-player").value;
+
+    for (let i = 0; i < encoderFields.length; i++) {
+        const encoderField = encoderFields[i];
+
+        if (encoderField.id.includes('hidden')) {
+            continue;
+        }
+
+        let value = encoderField.value;
+
+        if (encoderField.hasAttribute('data-isint')) {
+            value = parseInt(value);
+        }
+
+        payload[encoderField.getAttribute('data-jsonname')] = value;
+    }
 
     disableButtons();
     fetch('{{.FrontendUri}}/clipvideo', {
@@ -556,9 +574,27 @@ function profileSelected() {
     let profile = getSelectedProfile();
 
     if (profile) {
+        document.getElementById("libx264-encoding-preset").value = profile.encoderSettings.libx264.encodingPreset;
+        document.getElementById("libx264-encoding-preset-hidden").value = profile.encoderSettings.libx264.encodingPreset;
+        document.getElementById("libx264-quality-target").value = profile.encoderSettings.libx264.qualityTarget;
+        
+        document.getElementById("libx265-encoding-preset").value = profile.encoderSettings.libx265.encodingPreset;
+        document.getElementById("libx265-encoding-preset-hidden").value = profile.encoderSettings.libx265.encodingPreset;
+        document.getElementById("libx265-quality-target").value = profile.encoderSettings.libx265.qualityTarget;
+
+        document.getElementById("libaom-av1-quality-target").value = profile.encoderSettings['libaom-av1'].qualityTarget;
+
+        document.getElementById("h264_nvenc-encoding-preset").value = profile.encoderSettings.h264_nvenc.encodingPreset;
+        document.getElementById("h264_nvenc-encoding-preset-hidden").value = profile.encoderSettings.h264_nvenc.encodingPreset;
+        document.getElementById("h264_nvenc-quality-target").value = profile.encoderSettings.h264_nvenc.qualityTarget;
+
+        document.getElementById("hevc_nvenc-encoding-preset").value = profile.encoderSettings.hevc_nvenc.encodingPreset;
+        document.getElementById("hevc_nvenc-encoding-preset-hidden").value = profile.encoderSettings.hevc_nvenc.encodingPreset;
+        document.getElementById("hevc_nvenc-quality-target").value = profile.encoderSettings.hevc_nvenc.qualityTarget;
+
         document.getElementById("scale-factor").value = profile.scaleFactor;
-        document.getElementById("encoding-preset").value = profile.encodingPreset;
-        document.getElementById("quality-target").value = profile.qualityTarget;
+        document.getElementById("encoder").value = profile.encoder;
+        encoderChanged();
         document.getElementById("saturation").value = profile.saturation;
         document.getElementById("contrast").value = profile.contrast;
         document.getElementById("brightness").value = profile.brightness;
@@ -575,6 +611,93 @@ function profileSelected() {
 
         document.getElementById("alternate-player").value = profile.alternatePlayer;
         playerSelected();
+    }
+}
+
+function encoderChanged() {
+    const encoderDropdown = document.getElementById('encoder');
+    const selectedEncoder = encoderDropdown.options[encoderDropdown.selectedIndex];
+
+    if (!selectedEncoder) {
+        return;
+    }
+
+    const encoderFieldsContainer = document.getElementById('encoder-fields-' + selectedEncoder.value);
+
+    if (!encoderFieldsContainer) {
+        return;
+    }
+
+    let newFields = encoderFieldsContainer.cloneNode(true);
+    newFields.id = 'encoder-fields';
+    newFields = cloneNameToIdForFormElements(newFields);
+
+    const currentFields = document.getElementById('encoder-fields');
+    if (currentFields) {
+        currentFields.remove();
+    }
+
+    encoderDropdown.parentElement.insertAdjacentElement('afterend', newFields);
+    newFields.style.display = 'block';
+    cloneHiddenToSelectValues(newFields);
+}
+
+function updateEncoderHiddenValue(event, encoder) {
+    const element = event.target;
+    const currentHidden = document.getElementById(element.id + '-hidden');
+    const templateHidden = document.getElementById(encoder + '-' + element.id + '-hidden');
+
+    if (currentHidden) {
+        currentHidden.value = element.value;
+    }
+
+    if (templateHidden) {
+        templateHidden.value = element.value;
+    }
+}
+
+function updateEncoderValue(event, encoder) {
+    const element = event.target;
+    const templateElement = document.getElementById(encoder + '-' + element.id);
+
+    if (templateElement) {
+        templateElement.value = element.value;
+    }
+}
+
+function cloneNameToIdForFormElements(element) {
+    const elementType = element.tagName.toLowerCase();
+
+    if (elementType === 'input' || elementType === 'select') {
+        element.id = element.name;
+    }
+
+    let children = element.children;
+    if (children.length > 0) {
+        for (let i = 0; i < children.length; i++) {
+            cloneNameToIdForFormElements(children[i]);
+        }
+    }
+
+    return element;
+}
+
+function cloneHiddenToSelectValues(element) {
+    const elementType = element.tagName.toLowerCase();
+
+    if (elementType === 'select') {
+        const hidden = document.getElementById(element.id + '-hidden');
+
+        if (hidden) {
+            element.value = hidden.value;
+        }
+    }
+
+    let children = element.children;
+    if (children.length > 0) {
+        for (let i = 0; i < children.length; i++) {
+            cloneHiddenToSelectValues(children[i]);
+        }
     }
 }
 

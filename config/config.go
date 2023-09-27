@@ -17,18 +17,60 @@ type ConfigJson struct {
 }
 
 type ClipProfileJson struct {
-	ProfileName     string  `json:"profileName"`
-	ScaleFactor     float32 `json:"scaleFactor"`
-	EncodingPreset  string  `json:"encodingPreset"`
-	QualityTarget   int     `json:"qualityTarget"`
-	Saturation      float32 `json:"saturation"`
-	Contrast        float32 `json:"contrast"`
-	Brightness      float32 `json:"brightness"`
-	Gamma           float32 `json:"gamma"`
-	PlayAfter       bool    `json:"playAfter"`
-	VideoPlayer     string  `json:"videoPlayer"`
-	AlternatePlayer string  `json:"alternatePlayer"`
+	ProfileName     string                         `json:"profileName"`
+	ScaleFactor     float32                        `json:"scaleFactor"`
+	Encoder         EncoderType                    `json:"encoder"`
+	EncoderSettings ClipProfileJsonEncoderSettings `json:"encoderSettings"`
+	Saturation      float32                        `json:"saturation"`
+	Contrast        float32                        `json:"contrast"`
+	Brightness      float32                        `json:"brightness"`
+	Gamma           float32                        `json:"gamma"`
+	PlayAfter       bool                           `json:"playAfter"`
+	VideoPlayer     string                         `json:"videoPlayer"`
+	AlternatePlayer string                         `json:"alternatePlayer"`
 }
+
+type ClipProfileJsonEncoderSettings struct {
+	Libx264   Libx264EncoderSettings   `json:"libx264"`
+	Libx265   Libx265EncoderSettings   `json:"libx265"`
+	LibaomAv1 LibaomAv1EncoderSettings `json:"libaom-av1"`
+	NvencH264 NvencH264EncoderSettings `json:"h264_nvenc"`
+	NvencHevc NvencHevcEncoderSettings `json:"hevc_nvenc"`
+}
+
+type Libx264EncoderSettings struct {
+	EncodingPreset string `json:"encodingPreset"`
+	QualityTarget  int    `json:"qualityTarget"`
+}
+
+type Libx265EncoderSettings struct {
+	EncodingPreset string `json:"encodingPreset"`
+	QualityTarget  int    `json:"qualityTarget"`
+}
+
+type LibaomAv1EncoderSettings struct {
+	QualityTarget int `json:"qualityTarget"`
+}
+
+type NvencH264EncoderSettings struct {
+	EncodingPreset string `json:"encodingPreset"`
+	QualityTarget  int    `json:"qualityTarget"`
+}
+
+type NvencHevcEncoderSettings struct {
+	EncodingPreset string `json:"encodingPreset"`
+	QualityTarget  int    `json:"qualityTarget"`
+}
+
+type EncoderType string
+
+const (
+	Libx264EncoderType   EncoderType = "libx264"
+	Libx265EncoderType   EncoderType = "libx265"
+	LibaomAv1EncoderType EncoderType = "libaom-av1"
+	NvencH264EncoderType EncoderType = "h264_nvenc"
+	NvencHevcEncoderType EncoderType = "hevc_nvenc"
+)
 
 func GetConfig() (*ConfigJson, error) {
 	_, err := os.Stat(CONFIG_FILENAME)
@@ -141,11 +183,43 @@ func createDefaultConfigFile() error {
 }
 
 func generateDefaultConfigJson() ConfigJson {
+	libx264EncoderSettings := Libx264EncoderSettings{
+		EncodingPreset: "slow",
+		QualityTarget:  24,
+	}
+
+	libx265EncoderSettings := Libx265EncoderSettings{
+		EncodingPreset: "slow",
+		QualityTarget:  29,
+	}
+
+	libaomAv1EncoderSettings := LibaomAv1EncoderSettings{
+		QualityTarget: 29,
+	}
+
+	nvencH264EncoderSettings := NvencH264EncoderSettings{
+		EncodingPreset: "p4",
+		QualityTarget:  26,
+	}
+
+	nvencHevcEncoderSettings := NvencHevcEncoderSettings{
+		EncodingPreset: "p4",
+		QualityTarget:  31,
+	}
+
+	encoderSettings := ClipProfileJsonEncoderSettings{
+		Libx264:   libx264EncoderSettings,
+		Libx265:   libx265EncoderSettings,
+		LibaomAv1: libaomAv1EncoderSettings,
+		NvencH264: nvencH264EncoderSettings,
+		NvencHevc: nvencHevcEncoderSettings,
+	}
+
 	huntDayClipProfile := ClipProfileJson{
 		ProfileName:     "Hunt - Day",
 		ScaleFactor:     2.666,
-		EncodingPreset:  "slow",
-		QualityTarget:   24,
+		Encoder:         Libx264EncoderType,
+		EncoderSettings: encoderSettings,
 		Saturation:      2,
 		Contrast:        1.1,
 		Brightness:      0,
@@ -158,8 +232,8 @@ func generateDefaultConfigJson() ConfigJson {
 	huntNightClipProfile := ClipProfileJson{
 		ProfileName:     "Hunt - Night",
 		ScaleFactor:     2.666,
-		EncodingPreset:  "slow",
-		QualityTarget:   24,
+		Encoder:         Libx264EncoderType,
+		EncoderSettings: encoderSettings,
 		Saturation:      2,
 		Contrast:        1.1,
 		Brightness:      0.1,
@@ -172,8 +246,8 @@ func generateDefaultConfigJson() ConfigJson {
 	destinyClipProfile := ClipProfileJson{
 		ProfileName:     "Destiny",
 		ScaleFactor:     2.666,
-		EncodingPreset:  "slow",
-		QualityTarget:   24,
+		Encoder:         Libx264EncoderType,
+		EncoderSettings: encoderSettings,
 		Saturation:      1,
 		Contrast:        1,
 		Brightness:      0,
@@ -186,8 +260,8 @@ func generateDefaultConfigJson() ConfigJson {
 	altPlayerVlcProfile := ClipProfileJson{
 		ProfileName:     "Alt Player VLC",
 		ScaleFactor:     2.666,
-		EncodingPreset:  "slow",
-		QualityTarget:   24,
+		Encoder:         Libx264EncoderType,
+		EncoderSettings: encoderSettings,
 		Saturation:      1,
 		Contrast:        1,
 		Brightness:      0,
@@ -200,8 +274,8 @@ func generateDefaultConfigJson() ConfigJson {
 	altPlayerMpcbeProfile := ClipProfileJson{
 		ProfileName:     "Alt Player MPCBE",
 		ScaleFactor:     2.666,
-		EncodingPreset:  "slow",
-		QualityTarget:   24,
+		Encoder:         Libx264EncoderType,
+		EncoderSettings: encoderSettings,
 		Saturation:      1,
 		Contrast:        1,
 		Brightness:      0,

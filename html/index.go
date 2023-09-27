@@ -23,6 +23,21 @@ var w3ThemeBlueGreyCssTemplateContent string
 //go:embed js/main.js
 var mainJsTemplateContent string
 
+//go:embed encoder/libx264.html
+var libx264EncoderFieldsTemplateContent string
+
+//go:embed encoder/libx265.html
+var libx265EncoderFieldsTemplateContent string
+
+//go:embed encoder/nvench264.html
+var nvencH264EncoderFieldsTemplateContent string
+
+//go:embed encoder/nvenchevc.html
+var nvencHevcEncoderFieldsTemplateContent string
+
+//go:embed encoder/libaomav1.html
+var libaomAv1EncoderFieldsTemplateContent string
+
 type TemplateFileType int
 
 const (
@@ -80,18 +95,53 @@ func GetIndex2HtmlContent(frontendUri string) (string, error) {
 		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get js/main.js template string: %w", err)
 	}
 
+	libx264EncoderFieldsContent, err := getTemplateString(libx264EncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/libx264.html template string: %w", err)
+	}
+
+	libx265EncoderFieldsContent, err := getTemplateString(libx265EncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/libx265.html template string: %w", err)
+	}
+
+	libaomAv1EncoderFieldsContent, err := getTemplateString(libaomAv1EncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/libaomav1.html template string: %w", err)
+	}
+
+	nvencH264EncoderFieldsContent, err := getTemplateString(nvencH264EncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/nvench264.html template string: %w", err)
+	}
+
+	nvencHevcEncoderFieldsContent, err := getTemplateString(nvencHevcEncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/nvenchevc.html template string: %w", err)
+	}
+
 	indexHtmlTemplateData := struct {
-		HomeDirectory      string
-		FrontendUri        string
-		W3Css              template.HTML
-		W3ThemeBlueGreyCss template.HTML
-		MainJs             template.HTML
+		HomeDirectory              string
+		FrontendUri                string
+		W3Css                      template.HTML
+		W3ThemeBlueGreyCss         template.HTML
+		MainJs                     template.HTML
+		Libx264EncoderFieldsHtml   template.HTML
+		Libx265EncoderFieldsHtml   template.HTML
+		LibaomAv1EncoderFieldsHtml template.HTML
+		NvencH264EncoderFieldHtml  template.HTML
+		NvencHevcEncoderFieldHtml  template.HTML
 	}{
-		HomeDirectory:      currentDir,
-		FrontendUri:        frontendUri,
-		W3Css:              template.HTML(w3CssContent),
-		W3ThemeBlueGreyCss: template.HTML(w3ThemeBlueGreyCssContent),
-		MainJs:             template.HTML(mainJsContent),
+		HomeDirectory:              currentDir,
+		FrontendUri:                frontendUri,
+		W3Css:                      template.HTML(w3CssContent),
+		W3ThemeBlueGreyCss:         template.HTML(w3ThemeBlueGreyCssContent),
+		MainJs:                     template.HTML(mainJsContent),
+		Libx264EncoderFieldsHtml:   template.HTML(libx264EncoderFieldsContent),
+		Libx265EncoderFieldsHtml:   template.HTML(libx265EncoderFieldsContent),
+		LibaomAv1EncoderFieldsHtml: template.HTML(libaomAv1EncoderFieldsContent),
+		NvencH264EncoderFieldHtml:  template.HTML(nvencH264EncoderFieldsContent),
+		NvencHevcEncoderFieldHtml:  template.HTML(nvencHevcEncoderFieldsContent),
 	}
 
 	indexHtml, err := getTemplateString(index2HtmlTemplateContent, HtmlTemplateFileType, indexHtmlTemplateData)

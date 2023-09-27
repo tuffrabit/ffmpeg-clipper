@@ -27,5 +27,16 @@ Tool for making video clips. Download a executable from the releases and drop it
 - add linux / macos support
 - sub second start and stop support
 - marshal json responses
-- big code cleanup/refactor
+- big code cleanup/refactor - done
 - support for other encoders
+ - hevc/libx265 - done
+ - h264_amf
+ - h264_nvenc - done
+ - h264_qsv
+ - hevc_amf
+ - hevc_nvenc - done
+ - hevc_qsv
+ - av1/libaom-av1 - done
+ - av1_nvenc
+ - av1_qsv
+ - av1_amf

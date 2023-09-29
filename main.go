@@ -26,6 +26,7 @@ func main() {
 
 	router := httprouter.New()
 	router.GET("/", Index)
+	router.GET("/mainjs", GetMainJs)
 	router.GET("/checkffmpeg", controller.CheckFFmpeg)
 	router.GET("/getavailablevideos", controller.GetAvailableVideos)
 	router.GET("/getvideodetails/:name", controller.GetVideoDetails)
@@ -63,4 +64,20 @@ func main() {
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	fmt.Fprint(w, indexHtmlContent)
+}
+
+func GetMainJs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	header := w.Header()
+	header.Set("Content-Type", "text/html")
+
+	mainJsContent, err := html.GetMainJsContent(frontendUri)
+	if err != nil {
+		message := fmt.Sprintf("main.GetMainJs: could not get js template content: %v", err)
+		log.Println(message)
+		header.Set("Content-Type", "application/json")
+		fmt.Fprint(w, "{\"error:\""+message+"}")
+		return
+	}
+
+	fmt.Fprint(w, mainJsContent)
 }

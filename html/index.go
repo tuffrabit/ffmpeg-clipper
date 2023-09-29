@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"strings"
 )
 
 //go:embed index.html
@@ -29,14 +30,20 @@ var libx264EncoderFieldsTemplateContent string
 //go:embed encoder/libx265.html
 var libx265EncoderFieldsTemplateContent string
 
+//go:embed encoder/libaomav1.html
+var libaomAv1EncoderFieldsTemplateContent string
+
 //go:embed encoder/nvench264.html
 var nvencH264EncoderFieldsTemplateContent string
 
 //go:embed encoder/nvenchevc.html
 var nvencHevcEncoderFieldsTemplateContent string
 
-//go:embed encoder/libaomav1.html
-var libaomAv1EncoderFieldsTemplateContent string
+//go:embed encoder/intelh264.html
+var intelH264EncoderFieldsTemplateContent string
+
+//go:embed encoder/intelhevc.html
+var intelHevcEncoderFieldsTemplateContent string
 
 type TemplateFileType int
 
@@ -90,11 +97,6 @@ func GetIndex2HtmlContent(frontendUri string) (string, error) {
 		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get css/w3-theme-blue-grey.css template string: %w", err)
 	}
 
-	mainJsContent, err := getTemplateString(mainJsTemplateContent, JsTemplateFileType, nil)
-	if err != nil {
-		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get js/main.js template string: %w", err)
-	}
-
 	libx264EncoderFieldsContent, err := getTemplateString(libx264EncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
 	if err != nil {
 		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/libx264.html template string: %w", err)
@@ -120,28 +122,40 @@ func GetIndex2HtmlContent(frontendUri string) (string, error) {
 		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/nvenchevc.html template string: %w", err)
 	}
 
+	intelH264EncoderFieldsContent, err := getTemplateString(intelH264EncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/intelh264.html template string: %w", err)
+	}
+
+	intelHevcEncoderFieldsContent, err := getTemplateString(intelHevcEncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/intelhevc.html template string: %w", err)
+	}
+
 	indexHtmlTemplateData := struct {
 		HomeDirectory              string
 		FrontendUri                string
 		W3Css                      template.HTML
 		W3ThemeBlueGreyCss         template.HTML
-		MainJs                     template.HTML
 		Libx264EncoderFieldsHtml   template.HTML
 		Libx265EncoderFieldsHtml   template.HTML
 		LibaomAv1EncoderFieldsHtml template.HTML
 		NvencH264EncoderFieldHtml  template.HTML
 		NvencHevcEncoderFieldHtml  template.HTML
+		IntelH264EncoderFieldHtml  template.HTML
+		IntelHevcEncoderFieldHtml  template.HTML
 	}{
 		HomeDirectory:              currentDir,
 		FrontendUri:                frontendUri,
 		W3Css:                      template.HTML(w3CssContent),
 		W3ThemeBlueGreyCss:         template.HTML(w3ThemeBlueGreyCssContent),
-		MainJs:                     template.HTML(mainJsContent),
 		Libx264EncoderFieldsHtml:   template.HTML(libx264EncoderFieldsContent),
 		Libx265EncoderFieldsHtml:   template.HTML(libx265EncoderFieldsContent),
 		LibaomAv1EncoderFieldsHtml: template.HTML(libaomAv1EncoderFieldsContent),
 		NvencH264EncoderFieldHtml:  template.HTML(nvencH264EncoderFieldsContent),
 		NvencHevcEncoderFieldHtml:  template.HTML(nvencHevcEncoderFieldsContent),
+		IntelH264EncoderFieldHtml:  template.HTML(intelH264EncoderFieldsContent),
+		IntelHevcEncoderFieldHtml:  template.HTML(intelHevcEncoderFieldsContent),
 	}
 
 	indexHtml, err := getTemplateString(index2HtmlTemplateContent, HtmlTemplateFileType, indexHtmlTemplateData)
@@ -150,6 +164,24 @@ func GetIndex2HtmlContent(frontendUri string) (string, error) {
 	}
 
 	return indexHtml, nil
+}
+
+func GetMainJsContent(frontendUri string) (string, error) {
+	templateData := struct {
+		FrontendUri string
+	}{
+		FrontendUri: frontendUri,
+	}
+
+	mainJsContent, err := getTemplateString(mainJsTemplateContent, JsTemplateFileType, templateData)
+	if err != nil {
+		return "", fmt.Errorf("html.GetMainJsContent: could not get js/main.js template string: %w", err)
+	}
+
+	mainJsContent = strings.TrimPrefix(mainJsContent, "<script>")
+	mainJsContent = strings.TrimSuffix(mainJsContent, "</script>")
+
+	return mainJsContent, nil
 }
 
 func getTemplateString(templateContent string, templateFileType TemplateFileType, data any) (string, error) {

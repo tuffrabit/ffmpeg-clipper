@@ -592,6 +592,14 @@ function profileSelected() {
         document.getElementById("hevc_nvenc-encoding-preset-hidden").value = profile.encoderSettings.hevc_nvenc.encodingPreset;
         document.getElementById("hevc_nvenc-quality-target").value = profile.encoderSettings.hevc_nvenc.qualityTarget;
 
+        document.getElementById("h264_qsv-encoding-preset").value = profile.encoderSettings.h264_qsv.encodingPreset;
+        document.getElementById("h264_qsv-encoding-preset-hidden").value = profile.encoderSettings.h264_qsv.encodingPreset;
+        document.getElementById("h264_qsv-quality-target").value = profile.encoderSettings.h264_qsv.qualityTarget;
+
+        document.getElementById("hevc_qsv-encoding-preset").value = profile.encoderSettings.hevc_qsv.encodingPreset;
+        document.getElementById("hevc_qsv-encoding-preset-hidden").value = profile.encoderSettings.hevc_qsv.encodingPreset;
+        document.getElementById("hevc_qsv-quality-target").value = profile.encoderSettings.hevc_qsv.qualityTarget;
+
         document.getElementById("scale-factor").value = profile.scaleFactor;
         document.getElementById("encoder").value = profile.encoder;
         encoderChanged();

@@ -32,10 +32,10 @@ Tool for making video clips. Download a executable from the releases and drop it
  - hevc/libx265 - done
  - h264_amf
  - h264_nvenc - done
- - h264_qsv
+ - h264_qsv - done
  - hevc_amf
  - hevc_nvenc - done
- - hevc_qsv
+ - hevc_qsv - done
  - av1/libaom-av1 - done
  - av1_nvenc
  - av1_qsv

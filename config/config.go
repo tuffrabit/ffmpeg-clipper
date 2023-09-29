@@ -36,6 +36,8 @@ type ClipProfileJsonEncoderSettings struct {
 	LibaomAv1 LibaomAv1EncoderSettings `json:"libaom-av1"`
 	NvencH264 NvencH264EncoderSettings `json:"h264_nvenc"`
 	NvencHevc NvencHevcEncoderSettings `json:"hevc_nvenc"`
+	IntelH264 IntelH264EncoderSettings `json:"h264_qsv"`
+	IntelHevc IntelHevcEncoderSettings `json:"hevc_qsv"`
 }
 
 type Libx264EncoderSettings struct {
@@ -62,6 +64,16 @@ type NvencHevcEncoderSettings struct {
 	QualityTarget  int    `json:"qualityTarget"`
 }
 
+type IntelH264EncoderSettings struct {
+	EncodingPreset string `json:"encodingPreset"`
+	QualityTarget  int    `json:"qualityTarget"`
+}
+
+type IntelHevcEncoderSettings struct {
+	EncodingPreset string `json:"encodingPreset"`
+	QualityTarget  int    `json:"qualityTarget"`
+}
+
 type EncoderType string
 
 const (
@@ -70,6 +82,8 @@ const (
 	LibaomAv1EncoderType EncoderType = "libaom-av1"
 	NvencH264EncoderType EncoderType = "h264_nvenc"
 	NvencHevcEncoderType EncoderType = "hevc_nvenc"
+	IntelH264EncoderType EncoderType = "h264_qsv"
+	IntelHevcEncoderType EncoderType = "hevc_qsv"
 )
 
 func GetConfig() (*ConfigJson, error) {
@@ -207,12 +221,24 @@ func generateDefaultConfigJson() ConfigJson {
 		QualityTarget:  31,
 	}
 
+	intelH264EncoderSettings := IntelH264EncoderSettings{
+		EncodingPreset: "medium",
+		QualityTarget:  29,
+	}
+
+	intelHevcEncoderSettings := IntelHevcEncoderSettings{
+		EncodingPreset: "medium",
+		QualityTarget:  31,
+	}
+
 	encoderSettings := ClipProfileJsonEncoderSettings{
 		Libx264:   libx264EncoderSettings,
 		Libx265:   libx265EncoderSettings,
 		LibaomAv1: libaomAv1EncoderSettings,
 		NvencH264: nvencH264EncoderSettings,
 		NvencHevc: nvencHevcEncoderSettings,
+		IntelH264: intelH264EncoderSettings,
+		IntelHevc: intelHevcEncoderSettings,
 	}
 
 	huntDayClipProfile := ClipProfileJson{

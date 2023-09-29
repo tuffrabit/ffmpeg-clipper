@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"ffmpeg-clipper/common"
+	"ffmpeg-clipper/ffmpeg"
 	"fmt"
 	"io"
 	"log"
@@ -33,12 +34,14 @@ func GetAvailableVideos(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	}
 
 	allowedExtensions := map[string]struct{}{
-		".mp4": {},
-		".mkv": {},
-		".avi": {},
-		".flv": {},
-		".mov": {},
-		".wmv": {},
+		".mp4":  {},
+		".mkv":  {},
+		".avi":  {},
+		".flv":  {},
+		".mov":  {},
+		".wmv":  {},
+		".ogg":  {},
+		".webm": {},
 	}
 
 	for _, entry := range dirEntries {
@@ -79,7 +82,7 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	}
 
 	cmd := exec.Command(
-		FfprobePath,
+		ffmpeg.FfprobePath,
 		"-v",
 		"error",
 		"-select_streams",
@@ -215,7 +218,7 @@ func playVideoFile(videoFileName string, alternatePlayerPath string) error {
 		video := filepath.Join(currentDir, videoFileName)
 		cmd = exec.Command(alternatePlayerPath, video)
 	} else {
-		cmd = exec.Command(FfplayPath,
+		cmd = exec.Command(ffmpeg.FfplayPath,
 			"-nostats",
 			"-hide_banner",
 			"-loglevel",

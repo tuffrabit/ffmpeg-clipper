@@ -8,6 +8,18 @@
 *.so
 *.dylib
 
+ffmpeg-clipper-config.json
+
+# Video files
+*.mp4
+*.avi
+*.mkv
+*.webm
+*.mov
+*.flv
+*.wmv
+*.ogg
+
 # Test binary, built with `go test -c`
 *.test
 

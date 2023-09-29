@@ -94,10 +94,9 @@
             <div class="w3-modal-content">
                 <div class="w3-container">
                     <span onclick="hideClipHelp()" class="w3-button w3-display-topright">&times;</span>
-                    <p class="w3-small">Settings to use when creating a video clip. For the most part these values are directly inserted into an FFmpeg command. If you are familiar with FFmpeg you should already know what these values are for. The CPU x264 encoder is used. The eq filter is used for Saturation, Contrast, Brightness, and Gamma.</p>
+                    <p class="w3-small">Settings to use when creating a video clip. For the most part these values are directly inserted into an FFmpeg command. If you are familiar with FFmpeg you should already know what these values are for. The eq filter is used for Saturation, Contrast, Brightness, and Gamma.</p>
                     <p class="w3-small"><b>Scale Down Factor</b> - This value is used to downscale the clip from the source video's resolution. The source resolution's width is divided by this value and the height is auto calculated by preserving the original aspect ratio. Be aware, a value that results in a target resolution with either an odd numbered width or height will cause an encoder error.</p>
-                    <p class="w3-small"><b>Encoding Preset</b> - The x264 encoder preset. The value is a tradeoff between encoding speed and output filesize. Slower speeds result in a smaller file, while faster speeds result in a larger file.</p>
-                    <p class="w3-small"><b>Quality Target</b> - The x264 encoder CRF value. Lower numbers result in a higher bitrate (higher quality), while higher numbers result in a lower bitrate (lower quality). The higher the bitrate, the larger the resulting file. 0 is lossless. 18 is visually lossless. 24 - 28 is visually lossy but acceptable.</p>
+                    <p class="w3-small"><b>Encoder</b> - The encoder FFmpeg will use. You are responsible for making sure you have the appropriate hardware for a given encoder. If you don't know then you should stick with one of the CPU encoders.</p>
                     <p class="w3-small"><b>Saturation</b> - Color saturation adjustment. Range is 0 - 3. Default is 1. Decimal values are accepted.</p>
                     <p class="w3-small"><b>Contrast</b> - Contrast adjustment. Range is -1000 to 1000. Default is 1. Decimal values are accepted.</p>
                     <p class="w3-small"><b>Brightness</b> - Brightness adjustment. Range is -1 to 1. Default is 0. Decimal values are accepted.</p>
@@ -120,6 +119,12 @@
         </div>
         <div id="encoder-fields-hevc_nvenc" style="display:none">
             {{.NvencHevcEncoderFieldHtml}}
+        </div>
+        <div id="encoder-fields-h264_qsv" style="display:none">
+            {{.IntelH264EncoderFieldHtml}}
+        </div>
+        <div id="encoder-fields-hevc_qsv" style="display:none">
+            {{.IntelHevcEncoderFieldHtml}}
         </div>
         <div class="w3-container w3-cell-row">
             <div class="w3-container w3-cell" style="min-width:320px;max-width:320px">
@@ -197,6 +202,8 @@
                             <option value="libaom-av1">CPU AV1</option>
                             <option value="h264_nvenc">Nvidia H.264</option>
                             <option value="hevc_nvenc">Nvidia H.265</option>
+                            <option value="h264_qsv">Intel H.264</option>
+                            <option value="hevc_qsv">Intel H.265</option>
                         </select> 
                     </div>
                     <div>
@@ -224,6 +231,6 @@
             </div>
         </div>
     </div>
-    {{.MainJs}}
+    <script src="{{.FrontendUri}}/mainjs"></script>
   </body>
 </html>

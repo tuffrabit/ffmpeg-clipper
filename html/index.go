@@ -21,8 +21,17 @@ var w3CssTemplateContent string
 //go:embed css/w3-theme-blue-grey.css
 var w3ThemeBlueGreyCssTemplateContent string
 
+//go:embed css/pico.min.css
+var picoCssTemplateContent string
+
 //go:embed js/main.js
 var mainJsTemplateContent string
+
+//go:embed js/htmx.min.js
+var htmxJsTemplateContent string
+
+//go:embed js/modal.js
+var modalJsTemplateContent string
 
 //go:embed encoder/libx264.html
 var libx264EncoderFieldsTemplateContent string
@@ -45,6 +54,9 @@ var intelH264EncoderFieldsTemplateContent string
 //go:embed encoder/intelhevc.html
 var intelHevcEncoderFieldsTemplateContent string
 
+//go:embed encoder/intelav1.html
+var intelAv1EncoderFieldsTemplateContent string
+
 type TemplateFileType int
 
 const (
@@ -53,7 +65,7 @@ const (
 	JsTemplateFileType   TemplateFileType = 2
 )
 
-func GetIndexHtmlContent(frontendUri string) (string, error) {
+func GetIndexHtmlContent(frontendUri string, wsUri string) (string, error) {
 	template, err := template.New("").Parse(indexHtmlTemplateContent)
 	if err != nil {
 		return "", fmt.Errorf("html.GetIndexHtmlContent: could not parse %v template: %w", "index.html", err)
@@ -67,9 +79,11 @@ func GetIndexHtmlContent(frontendUri string) (string, error) {
 	data := struct {
 		HomeDirectory string
 		FrontendUri   string
+		WsUri         string
 	}{
 		HomeDirectory: currentDir,
 		FrontendUri:   frontendUri,
+		WsUri:         wsUri,
 	}
 
 	var templateBuffer bytes.Buffer
@@ -132,6 +146,11 @@ func GetIndex2HtmlContent(frontendUri string) (string, error) {
 		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/intelhevc.html template string: %w", err)
 	}
 
+	intelAv1EncoderFieldsContent, err := getTemplateString(intelAv1EncoderFieldsTemplateContent, HtmlTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetIndex2HtmlContent: could not get encoder/intelav1.html template string: %w", err)
+	}
+
 	indexHtmlTemplateData := struct {
 		HomeDirectory              string
 		FrontendUri                string
@@ -144,6 +163,7 @@ func GetIndex2HtmlContent(frontendUri string) (string, error) {
 		NvencHevcEncoderFieldHtml  template.HTML
 		IntelH264EncoderFieldHtml  template.HTML
 		IntelHevcEncoderFieldHtml  template.HTML
+		IntelAv1EncoderFieldHtml   template.HTML
 	}{
 		HomeDirectory:              currentDir,
 		FrontendUri:                frontendUri,
@@ -156,6 +176,7 @@ func GetIndex2HtmlContent(frontendUri string) (string, error) {
 		NvencHevcEncoderFieldHtml:  template.HTML(nvencHevcEncoderFieldsContent),
 		IntelH264EncoderFieldHtml:  template.HTML(intelH264EncoderFieldsContent),
 		IntelHevcEncoderFieldHtml:  template.HTML(intelHevcEncoderFieldsContent),
+		IntelAv1EncoderFieldHtml:   template.HTML(intelAv1EncoderFieldsContent),
 	}
 
 	indexHtml, err := getTemplateString(index2HtmlTemplateContent, HtmlTemplateFileType, indexHtmlTemplateData)
@@ -173,21 +194,52 @@ func GetMainJsContent(frontendUri string) (string, error) {
 		FrontendUri: frontendUri,
 	}
 
-	mainJsContent, err := getTemplateString(mainJsTemplateContent, JsTemplateFileType, templateData)
+	content, err := getTemplateString(mainJsTemplateContent, JsTemplateFileType, templateData)
 	if err != nil {
 		return "", fmt.Errorf("html.GetMainJsContent: could not get js/main.js template string: %w", err)
 	}
 
-	mainJsContent = strings.TrimPrefix(mainJsContent, "<script>")
-	mainJsContent = strings.TrimSuffix(mainJsContent, "</script>")
+	content = strings.TrimPrefix(content, "<script>")
+	content = strings.TrimSuffix(content, "</script>")
 
-	return mainJsContent, nil
+	return content, nil
+}
+
+func GetPicoCssContent() (string, error) {
+	content, err := getTemplateString(picoCssTemplateContent, CssTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GePicoCssContent: could not get css/pico.min.css template string: %w", err)
+	}
+
+	return content, nil
+}
+
+func GetHtmxJsContent() (string, error) {
+	content, err := getTemplateString(htmxJsTemplateContent, JsTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetHtmxJsContent: could not get js/htmx.min.js template string: %w", err)
+	}
+
+	content = strings.TrimPrefix(content, "<script>")
+	content = strings.TrimSuffix(content, "</script>")
+
+	return content, nil
+}
+
+func GetModalJsContent() (string, error) {
+	content, err := getTemplateString(modalJsTemplateContent, JsTemplateFileType, nil)
+	if err != nil {
+		return "", fmt.Errorf("html.GetModalJsContent: could not get js/modal.js template string: %w", err)
+	}
+
+	content = strings.TrimPrefix(content, "<script>")
+	content = strings.TrimSuffix(content, "</script>")
+
+	return content, nil
 }
 
 func getTemplateString(templateContent string, templateFileType TemplateFileType, data any) (string, error) {
-	if templateFileType == CssTemplateFileType {
-		templateContent = fmt.Sprintf("<style>%s</style>", templateContent)
-	} else if templateFileType == JsTemplateFileType {
+	if templateFileType == JsTemplateFileType {
 		templateContent = fmt.Sprintf("<script>%s</script>", templateContent)
 	}
 

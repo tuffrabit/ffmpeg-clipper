@@ -64,6 +64,8 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		newVideoName, err = ffmpegEncoder.ClipIntelH264(bodyJson)
 	case config.IntelHevcEncoderType:
 		newVideoName, err = ffmpegEncoder.ClipIntelHevc(bodyJson)
+	case config.IntelAv1EncoderType:
+		newVideoName, err = ffmpegEncoder.ClipIntelAv1(bodyJson)
 	default:
 		err = fmt.Errorf("%v is not a valid encoder", encoder)
 	}

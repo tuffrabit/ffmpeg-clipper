@@ -1,0 +1,19 @@
+package templ
+
+templ GetAvailableVideos(videos []string) {
+	for _, v := range videos {
+        <option value={ v }>{ v }</option>
+    }
+}
+
+templ GetVideoPlayer(path string) {
+    <video id="video-player" src={ path } style="width:100%;height:auto" controls autoplay></video>
+}
+
+templ GetVideoPlayerOutOfBand() {
+    <video id="video-player" hx-swap-oob="outerHTML:#video-player" style="width:100%;height:auto" controls autoplay></video>
+}
+
+templ GetVideoResolutionOutOfBand(resolution string) {
+    <p hx-swap-oob="innerHTML:#video-resolution">Resolution: { resolution }</p>
+}

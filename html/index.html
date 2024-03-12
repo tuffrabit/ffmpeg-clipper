@@ -1,787 +1,140 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="static/pico.min.css">
+    <script src="static/htmx.min.js" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <script src="static/modal.js"></script>
+    <script src="static/main.js"></script>
     <title>ffmpeg-clipper {{.HomeDirectory}}</title>
-    <link rel="shortcut icon" href="#">
-    <style>
-        .error {
-            background-color: tomato;
-        }
-    </style>
   </head>
   <body>
-    <h2>{{.HomeDirectory}}</h2>
-    <div style="display: flex;flex-direction: column;">
-        <div style="display: flex;flex-direction: row;gap: 20px">
-            <div style="display: flex;flex-direction: column;gap: 10px;max-width: 550px">
-                <button onclick="getAvailableVideos()">Refresh Available Videos</button>
-                <div>
-                    <label for="available-videos">Available Videos</label>
-                    <select id="available-videos" name="available-videos" size="" style="max-height: 200px;"></select> 
-                </div>
-                <button onclick="playVideo()">Play Video</button>
-                <button onclick="deleteVideo()">Delete Video</button>
-                <div>
-                    <label for="player-browser">Use Browser Player</label>
-                    <input type="radio" id="player-browser" name="video-player" value="browser" checked="checked" />
-                    <p style="margin: 0">This option only supports .mp4, .webm, and .ogg videos.</p>
-                </div>
-                <div>
-                    <label for="player-ffplay">Use FFplay</label>
-                    <input type="radio" id="player-ffplay" name="video-player" value="ffplay" />
-                    <p style="margin: 0">Super basic, but should be universally available.</p>
-                </div>
-                <div>
-                    <label for="player-alternate">Use Alternate</label>
-                    <input type="radio" id="player-alternate" name="video-player" value="alternate" />
-                    <input id="alternate-player" type="text" style="width: 100%" />
-                    <p style="margin: 0">Full path to valid video player executable. ffmpeg-clipper assumes the alternate player executable simply takes a video file path as its main argument.</p>
-                </div>
+    <header class="container-fluid">
+      <div hx-trigger="load" hx-get="checkffmpeg" hx-swap="none" style="display:none"></div>
+      <nav>
+        <ul>
+          <li><strong>{{.HomeDirectory}}</strong></li>
+        </ul>
+        <ul>
+          <li><a id="alert-icon" href="#" data-target="modal-alert" onclick="toggleModal(event)">!</a></li>
+        </ul>
+      </nav>
+      <dialog id="modal-alert">
+        <article>
+          <header>
+            <button
+              aria-label="Close"
+              rel="prev"
+              data-target="modal-alert"
+              onclick="toggleModal(event)"
+            ></button>
+          </header>
+          <textarea id="alert-text" name="read-only" readonly></textarea>
+        </article>
+      </dialog>
+    </header>
+    <main class="container-fluid">
+      <div class="grid">
+        <div class="container">
+          <div>
+            <h6>Videos</h6>
+            <button hx-trigger="click" hx-get="/videos.html" hx-target="#available-videos-select" hx-swap="innerHTML" style="margin-bottom:13px;">Refresh List</button>
+            <select id="available-videos-select" aria-label="Videos" multiple size="6" hx-trigger="load" hx-get="/videos.html" hx-swap="innerHTML" style="margin-bottom:13px;"></select>
+            <div role="group">
+              <button
+                hx-trigger="click"
+                hx-get="/getvideoplayer.html"
+                hx-target="#video-player"
+                hx-swap="outerHTML"
+                hx-vals='js:{path: getSelectedVideo().value}'>Play</button>
+              <button
+                hx-trigger="click"
+                hx-post="/deletevideo.html"
+                hx-target="#available-videos-select"
+                hx-swap="innerHTML"
+                hx-confirm="Are you sure you wish to delete the selected video?"
+                hx-vals='js:{path: getSelectedVideo().value}'
+                class="secondary">Delete</button>
             </div>
-            <div style="display: flex;flex-direction: column;gap: 10px">
-                <span>
-                    <label for="start-time">Start (hh:mm:ss)</label>
-                    <input id="start-time" type="text" value="00:00:00" onchange="validateTime(event)" />
-                </span>
-                <span>
-                    <label for="end-time">End (hh:mm:ss)</label>
-                    <input id="end-time" type="text" value="00:00:00" onchange="validateTime(event)" />
-                </span>
-                <span>
-                    <label for="scale-factor">Scale Down Factor</label>
-                    <input id="scale-factor" type="text" value="2.666" onchange="validateFloat(event, .01, 100);calculateScale();" />
-                </span>
-                <span>
-                    <label for="encoding-preset">Encoding Preset</label>
-                    <select id="encoding-preset" name="encoding-preset">
-                        <option value="ultrafast">ultrafast</option>
-                        <option value="superfast">superfast</option>
-                        <option value="veryfast">veryfast</option>
-                        <option value="faster">faster</option>
-                        <option value="fast">fast</option>
-                        <option value="medium" selected="selected">medium</option>
-                        <option value="slow">slow</option>
-                        <option value="slower">slower</option>
-                        <option value="veryslow">veryslow</option>
-                    </select> 
-                </span>
-                <span>
-                    <label for="quality-target">Quality Target (0 to 51)</label>
-                    <input id="quality-target" type="text" value="24" onchange="validateFloat(event, 0, 51)" />
-                </span>
-                <span>
-                    <label for="saturation" title="Default 1">Saturation (0.0 to 3.0)</label>
-                    <input id="saturation" type="text" value="1" onchange="validateFloat(event, 0, 3)" title="Default 1" />
-                </span>
-                <span>
-                    <label for="contrast" title="Default 1">Contrast (-1000.0 to 1000.0)</label>
-                    <input id="contrast" type="text" value="1" onchange="validateFloat(event, -1000, 1000)" title="Default 1" />
-                </span>
-                <span>
-                    <label for="brightness" title="Default 0">Brightness (-1.0 to 1.0)</label>
-                    <input id="brightness" type="text" value="0" onchange="validateFloat(event, -1, 1)" title="Default 0" />
-                </span>
-                <span>
-                    <label for="gamma" title="Default 1">Gamma (0.1 to 10.0)</label>
-                    <input id="gamma" type="text" value="1" onchange="validateFloat(event, .1, 10)" title="Default 1" />
-                </span>
-                <span>
-                    <label for="play-after">Play clip when done</label>
-                    <input id="play-after" type="checkbox" />
-                </span>
-                <button onclick="clipVideo()">Clip</button>
+          </div>
+          <div>
+            <h6>Profiles</h6>
+            <select id="profiles-select" aria-label="Profiles" multiple size="6" hx-trigger="load" hx-get="/profiles.html" hx-swap="innerHTML" style="margin-bottom:13px;"></select>
+            <div role="group">
+              <button
+                hx-trigger="click"
+                hx-post="/saveprofile.html"
+                hx-target="#profiles-select"
+                hx-swap="innerHTML"
+                hx-confirm="Are you sure you wish to overwrite the selected profile?"
+                hx-vals='js:{name: getSelectedProfile().value}'>Save</button>
+              <button
+                hx-trigger="click"
+                hx-post="/saveprofile.html"
+                hx-target="#profiles-select"
+                hx-swap="innerHTML"
+                hx-prompt="New profile name?">Save New</button>
+              <button
+                hx-trigger="click"
+                hx-post="/deleteprofile.html"
+                hx-target="#profiles-select"
+                hx-swap="innerHTML"
+                hx-confirm="Are you sure you wish to delete the selected profile?"
+                hx-vals='js:{name: getSelectedProfile().value}'
+                class="secondary">Delete</button>
             </div>
-            <div style="display: flex;flex-direction: column;gap: 10px">
-                <span>
-                    <label for="profiles">Profiles</label>
-                    <select id="profiles" name="profiles" size="0" style="max-height: 135px;" onchange="profileSelected()"></select> 
-                </span>
-                <span style="display: flex;flex-direction: row;gap: 7px">
-                    <button onclick="saveProfile()">Save</button>
-                    <button onclick="saveNewProfile()">Save New</button>
-                    <button onclick="deleteProfile()">Delete</button>
-                </span>
-                <h3>Scale Calculator</h3>
-                <button onclick="getVideoDetails()">Get Video Details</button>
-                <span>
-                    <label for="source-width">Source Width</label>
-                    <input id="source-width" type="text" readonly />
-                </span>
-                <span>
-                    <label for="source-height">Source Height</label>
-                    <input id="source-height" type="text" readonly />
-                </span>
-                <span>
-                    <label for="new-size">New Size</label>
-                    <input id="new-size" type="text" readonly />
-                </span>
-            </div>
+          </div>
         </div>
-        <div style="display: flex;flex-direction: column;margin: 13px 17px 0 17px">
-            <div id="browser-player-container" style="display: none">
-                <div style="display: flex;flex-direction: row;margin: 13px 17px 0 17px">
-                    <button onclick="setClipStart()">Set Clip Start</button>
-                    <button onclick="setClipStop()">Set Clip Stop</button>
-                    <button onclick="closeBrowserPlayer()">Close Player</button>
-                    <h4 id="video-title" style="margin: 0"></h4>
-                </div>
-                <video id="video-player" controls autoplay></video>
-                <div style="display: flex;flex-direction: row;margin: 0 17px 13px 17px">
-                    <button onclick="setClipStart()">Set Clip Start</button>
-                    <button onclick="setClipStop()">Set Clip Stop</button>
-                    <button onclick="closeBrowserPlayer()">Close Player</button>
-                </div>
-            </div>
-            
-            <label for="output">Messages</label>
-            <button onclick="clearOutput()" style="width: 81px;">Clear</button>
-            <textarea id="output" style="width: 100%;" rows="15" readonly></textarea>
+        <div>
+          <video id="video-player" style="width:100%;height:auto" controls autoplay></video>
+          <div id="video-resolution"></div>
         </div>
-    </div>
+        <div>
+          <form>
+            <div>
+              <label for="start-time">Start (hh:mm:ss)</label>
+              <input id="start-time" type="text" value="00:00:00" />
+            </div>
+            <div>
+              <label for="end-time">End (hh:mm:ss)</label>
+              <input id="end-time" type="text" value="00:00:00" />
+            </div>
+            <div id="profile-form" hx-trigger="change from:#profiles-select" hx-get="/getprofile.html" hx-swap="innerHTML" hx-vals='js:{name: getSelectedProfile().value}' style="margin-bottom:13px;"></div>
+            <button>Clip</button>
+          </form>
+        </div>
+      </div>
+    </main>
+    <footer class="container-fluid"></footer>
     <script>
-        function closeBrowserPlayer() {
-            document.getElementById('video-player').pause();
-            document.getElementById('browser-player-container').style.display = "none";
-        }
-
-        function formatFFmpegTime(time) {
-            time = time.toString();
-
-            if (time.length < 2) {
-                time = '0' + time;
-            }
-
-            return time;
-        }
-
-        function getCurrentFFmpegTime() {
-            let videoPlayer = document.getElementById('video-player');
-            let currentTime = videoPlayer.currentTime;
-            let ffmpegTime = null;
-            let hours = 0;
-            let minutes = 0;
-            let seconds = 0;
-
-            if (currentTime > 0) {
-                if (currentTime < 60) {
-                    seconds = parseInt(currentTime);
-                } else if (currentTime < 3600) {
-                    minutes = parseInt(currentTime / 60);
-                    seconds = parseInt(currentTime % 60);
-                } else {
-                    hours = parseInt(currentTime / 3600);
-                    let remainingSeconds = parseInt(currentTime % 3600);
-
-                    if (remainingSeconds < 60) {
-                        seconds = remainingSeconds;
-                    } else {
-                        minutes = parseInt(remainingSeconds / 60);
-                        seconds = parseInt(remainingSeconds % 60);
-                    }
-                }
-            }
-
-            ffmpegTime = formatFFmpegTime(hours) + ':' + formatFFmpegTime(minutes) + ':' + formatFFmpegTime(seconds);
-
-            return ffmpegTime;
-        }
-
-        function setClipStart() {
-            let ffmpegTime = getCurrentFFmpegTime();
-
-            if (ffmpegTime !== null) {
-                document.getElementById("start-time").value = ffmpegTime;
-            }
-        }
-
-        function setClipStop() {
-            let ffmpegTime = getCurrentFFmpegTime();
-
-            if (ffmpegTime !== null) {
-                document.getElementById("end-time").value = ffmpegTime;
-            }
-        }
-
-        function getBasicSettingsPayload() {
-            let encodingPresetDropdown = document.getElementById("encoding-preset");
-            let payload = null;
-
-            try {
-                payload = {
-                    "scaleFactor": parseFloat(document.getElementById("scale-factor").value),
-                    "encodingPreset": encodingPresetDropdown.options[encodingPresetDropdown.selectedIndex].value,
-                    "qualityTarget": parseInt(document.getElementById("quality-target").value),
-                    "saturation": parseFloat(document.getElementById("saturation").value),
-                    "contrast": parseFloat(document.getElementById("contrast").value),
-                    "brightness": parseFloat(document.getElementById("brightness").value),
-                    "gamma": parseFloat(document.getElementById("gamma").value),
-                    "playAfter": document.getElementById("play-after").checked
-                };
-            } catch(err) {
-                addOutput("Could not create request payload, err: " + err);
-            }
-
-            return payload;
-        }
-
-        function streamVideo(videoName) {
-            getVideoDetails(videoName, function(video, width, height) {
-                let browserPlayerContainer = document.getElementById('browser-player-container');
-                let videoPlayer = document.getElementById('video-player');
-                
-                browserPlayerContainer.style.display = "block";
-                const ratio = width / height;
-                const styles = window.getComputedStyle(browserPlayerContainer);
-                const containerWidth = (browserPlayerContainer.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight)) / 2;
-
-                videoPlayer.width = containerWidth;
-                videoPlayer.height = containerWidth / ratio;
-                document.getElementById('video-title').innerText = video;
-                videoPlayer.src = '{{.FrontendUri}}/streamvideo/' + encodeURIComponent(video);
-                document.getElementById("available-videos").value = video;
-            });
-        }
-
-        function playVideo(videoName) {
-            let dropdown = document.getElementById("available-videos");
-            let video = "";
-
-            if (videoName) {
-                video = videoName;
-            } else {
-                if (dropdown.options[dropdown.selectedIndex]) {
-                    video = dropdown.options[dropdown.selectedIndex].value;
-                }
-            }
-
-            if (video) {
-                let videoPlayerRadio = document.querySelector('input[name="video-player"]:checked');
-                let videoPlayer = null;
-
-                if (videoPlayerRadio) {
-                    videoPlayer = videoPlayerRadio.value;
-                } else {
-                    videoPlayer = "browser";
-                }
-
-                if (videoPlayer === "browser") {
-                    streamVideo(video);
-                    return;
-                }
-
-                let payload = {
-                    "video": video,
-                    "alternatePlayer": document.getElementById("alternate-player").value
-                };
-
-                fetch('{{.FrontendUri}}/playvideo/', {
-                    method: "POST",
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(function(response) {
-                    return response.json();
-                })
-                .then(function(responseJson) {
-                    if (responseJson.Error) {
-                        addOutput("Play error: " + responseJson.Error);
-                    }
-                });
-            }
-        }
-
-        function deleteVideo() {
-            let dropdown = document.getElementById("available-videos");
-            let video = dropdown.options[dropdown.selectedIndex];
-
-            if (video) {
-                let confirmed = confirm("Are you sure?");
-
-                if (!confirmed) {
-                    return;
-                }
-
-                let payload = {
-                    "video": video.value
-                };
-
-                disableButtons();
-                fetch('{{.FrontendUri}}/deletevideo/', {
-                    method: "DELETE",
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(function(response) {
-                    enableButtons();
-                    return response.json();
-                })
-                .then(function(responseJson) {
-                    if (responseJson.Error) {
-                        addOutput("Delete video error: " + responseJson.Error);
-                        }else {
-                        addOutput(video.value + " was deleted!");
-                        getAvailableVideos();
-                    }
-                });
-            }
-        }
-
-        function clipVideo() {
-            if (document.getElementsByClassName("error").length > 0) {
-                addOutput("You have clip settings errors, fix them!");
-                return;
-            }
-
-            let videoDropdown = document.getElementById("available-videos");
-            let selectedVideo = videoDropdown.options[videoDropdown.selectedIndex];
-
-            if (!selectedVideo) {
-                addOutput("You don't have a video selected.");
-                return;
-            }
-
-            let payload = getBasicSettingsPayload();
-            payload.video = selectedVideo.value;
-            payload.startTime = document.getElementById("start-time").value;
-            payload.endTime = document.getElementById("end-time").value;
-            payload.alternatePlayer = document.getElementById("alternate-player").value;
-
-            disableButtons();
-            fetch('{{.FrontendUri}}/clipvideo', {
-                method: "POST",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(function(response) {
-                enableButtons();
-                return response.json();
-            })
-            .then(function(responseJson) {
-                if (responseJson.Error) {
-                    addOutput("Clip error: " + responseJson.Error);
-                } else {
-                    addOutput(responseJson.newVideoName + " was created!");
-                    getAvailableVideos();
-                    
-                    if (payload.playAfter) {
-                        addOutput("Playing: " + responseJson.newVideoName);
-                        playVideo(responseJson.newVideoName);
-                    }
-                }
-            });
-        }
-
-        function getAvailableVideos() {
-            let dropdown = document.getElementById("available-videos");
-            let selected = "";
-            let selectedOption = dropdown.options[dropdown.selectedIndex];
-
-            if (selectedOption) {
-                selected = selectedOption.value;
-            }
-
-            disableButtons();
-            fetch('{{.FrontendUri}}/getavailablevideos')
-            .then(function(response) {
-                enableButtons();
-                return response.json();
-            })
-            .then(function(responseJson) {
-                if (responseJson.Error) {
-                    addOutput("Get videos error: " + responseJson.Error);
-                } else {
-                    dropdown.innerHTML = "";
-
-                    for (let i = 0; i < responseJson.AvailableVideos.length; i++) {
-                        let videoName = responseJson.AvailableVideos[i];
-                        let option = document.createElement("option");
-                        option.text = videoName;
-                        option.value = videoName;
-
-                        if (selected === videoName) {
-                            option.selected = "selected";
-                        }
-
-                        dropdown.add(option);
-                    }
-
-                    dropdown.setAttribute('size', responseJson.AvailableVideos.length);
-                    addOutput("Available videos retrieved");
-                }
-            });
-        }
-
-        function getVideoDetails(videoName, callback) {
-            let dropdown = document.getElementById("available-videos");
-            let video = "";
-
-            if (videoName) {
-                video = videoName;
-            } else {
-                if (dropdown.options[dropdown.selectedIndex]) {
-                    video = dropdown.options[dropdown.selectedIndex].value;
-                }
-            }
-
-            if (video) {
-                disableButtons();
-                fetch('{{.FrontendUri}}/getvideodetails/' + encodeURIComponent(video))
-                .then(function(response) {
-                    enableButtons();
-                    return response.json();
-                })
-                .then(function(responseJson) {
-                    if (responseJson.Error) {
-                        addOutput("Get video details error: " + responseJson.Error);
-                    } else {
-                        let resolution = responseJson.Resolution;
-
-                        if (resolution && resolution.includes("x")) {
-                            let resolutionFields = resolution.split("x");
-
-                            if (Array.isArray(resolutionFields) && resolutionFields.length > 1) {
-                                document.getElementById("source-width").value = resolutionFields[0];
-                                document.getElementById("source-height").value = resolutionFields[1];
-                                calculateScale();
-
-                                if (callback) {
-                                    callback(video, resolutionFields[0], resolutionFields[1]);
-                                }
-
-                                addOutput("Video details retrieved for " + video);
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        function getConfig() {
-            let dropdown = document.getElementById("profiles");
-            let selected = "";
-            let selectedOption = dropdown.options[dropdown.selectedIndex];
-
-            if (selectedOption) {
-                selected = selectedOption.value;
-            }
-
-            disableButtons();
-            fetch('{{.FrontendUri}}/getconfig')
-            .then(function(response) {
-                enableButtons();
-                return response.json();
-            })
-            .then(function(responseJson) {
-                if (responseJson.Error) {
-                    addOutput("Get config error: " + responseJson.Error);
-                } else {
-                    let dropdown = document.getElementById("profiles");
-                    dropdown.innerHTML = "";
-
-                    for (let i = 0; i < responseJson.profiles.length; i++) {
-                        let option = document.createElement("option");
-                        option.text = responseJson.profiles[i].profileName;
-                        option.value = responseJson.profiles[i].profileName;
-
-                        if (selected === responseJson.profiles[i].profileName) {
-                            option.selected = "selected";
-                        }
-
-                        dropdown.add(option);
-                    }
-
-                    dropdown.setAttribute('size', responseJson.profiles.length);
-                    profiles = responseJson.profiles;
-                    profileSelected();
-                    addOutput("Config retrieved");
-                }
-            });
-        }
-
-        function saveProfile() {
-            let profile = getSelectedProfile();
-
-            if (profile) {
-                let confirmed = confirm("Are you sure?");
-
-                if (confirmed) {
-                    doSaveProfile(profile.profileName);
-                }
-            }
-        }
-
-        function saveNewProfile() {
-            let profileName = prompt("Profile Name?");
-
-            if (profileName) {
-                let confirmed = confirm("Are you sure?");
-
-                if (confirmed) {
-                    doSaveProfile(profileName);
-                }
-            }
-        }
-
-        function deleteProfile() {
-            let profile = getSelectedProfile();
-
-            if (profile) {
-                let confirmed = confirm("Are you sure?");
-
-                if (confirmed) {
-                    let payload = {"profileName": profile.profileName};
-                    
-                    disableButtons();
-                    fetch('{{.FrontendUri}}/deleteprofile', {
-                        method: "DELETE",
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                    .then(function(response) {
-                        enableButtons();
-                        return response.json();
-                    })
-                    .then(function(responseJson) {
-                        if (responseJson.Error) {
-                            addOutput("Delete profile error: " + responseJson.Error);
-                        } else {
-                            addOutput(profile.profileName + " was deleted!");
-                            getConfig();
-                        }
-                    });
-                }
-            }
-        }
-
-        function doSaveProfile(profileName) {
-            if (profileName) {
-                let payload = getBasicSettingsPayload();
-                payload.profileName = profileName;
-                payload.alternatePlayer = document.getElementById("alternate-player").value;
-                payload.videoPlayer = document.querySelector('input[name="video-player"]:checked').value;
-
-                disableButtons();
-                fetch('{{.FrontendUri}}/saveprofile', {
-                    method: "POST",
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                })
-                .then(function(response) {
-                    enableButtons();
-                    return response.json();
-                })
-                .then(function(responseJson) {
-                    if (responseJson.Error) {
-                        addOutput("Save profile error: " + responseJson.Error);
-                    } else {
-                        addOutput(profileName + " was saved!");
-                        getConfig();
-                    }
-                });
-            }
-        }
-
-        function getSelectedProfile() {
-            let dropdown = document.getElementById("profiles");
-            let selectedOption = dropdown.options[dropdown.selectedIndex];
-            let profile = null;
-
-            if (selectedOption) {
-                let selected = dropdown.options[dropdown.selectedIndex].value;
-
-                for (let i = 0; i < profiles.length; i++) {
-                    if (selected === profiles[i].profileName) {
-                        profile = profiles[i];
-                        break;
-                    }
-                }
-            }
-
-            return profile;
-        }
-
-        function profileSelected() {
-            let profile = getSelectedProfile();
-
-            if (profile) {
-                document.getElementById("scale-factor").value = profile.scaleFactor;
-                document.getElementById("encoding-preset").value = profile.encodingPreset;
-                document.getElementById("quality-target").value = profile.qualityTarget;
-                document.getElementById("saturation").value = profile.saturation;
-                document.getElementById("contrast").value = profile.contrast;
-                document.getElementById("brightness").value = profile.brightness;
-                document.getElementById("gamma").value = profile.gamma;
-                document.getElementById("play-after").checked = profile.playAfter;
-
-                if (profile.videoPlayer === "browser") {
-                    document.getElementById("player-browser").checked = true;
-                } else if (profile.videoPlayer === "ffplay") {
-                    document.getElementById("player-ffplay").checked = true;
-                } else if (profile.videoPlayer === "alternate") {
-                    document.getElementById("player-alternate").checked = true;
-                }
-
-                document.getElementById("alternate-player").value = profile.alternatePlayer;
-            }
-        }
-
-        function clearOutput() {
-            document.getElementById("output").value = "";
-        }
-
-        function addOutput(message) {
-            let output = document.getElementById("output");
-
-            output.value = output.value + message + '\n';
-        }
-
-        function validateTime(event) {
-            let value = event.target.value;
-
-            if (typeof value !== "string") {
-                event.target.classList.add("error");
-                return;
-            }
-
-            let values = value.split(":");
-
-            if (values.length !== 3) {
-                event.target.classList.add("error");
-                return;
-            }
-
-            for (let i = 0; i < values.length; i++) {
-                if (values[i].length !== 2) {
-                    event.target.classList.add("error");
-                    return;
-                }
-
-                if (values[i].includes('-')) {
-                    event.target.classList.add("error");
-                    return;
-                }
-
-                if (isNaN(values[i])) {
-                    event.target.classList.add("error");
-                    return;
-                }
-            }
-
-            event.target.classList.remove("error");
-            return;
-        }
-
-        function validateFloat(event, min, max) {
-            let value = event.target.value;
-
-            if (isNaN(value)) {
-                event.target.classList.add("error");
-                return;
-            }
-
-            if (value < min || value > max) {
-                event.target.classList.add("error");
-                return;
-            }
-
-            event.target.classList.remove("error");
-            return;
-        }
-
-        function validateInt(event, min, max) {
-            let value = event.target.value;
-
-            if (isNaN(value) || value.includes('.')) {
-                event.target.classList.add("error");
-                return;
-            }
-
-            value = parseInt(value);
-
-            if (!Number.isInteger(value)) {
-                event.target.classList.add("error");
-                return;
-            }
-
-            if (value < min || value > max) {
-                event.target.classList.add("error");
-                return;
-            }
-
-            event.target.classList.remove("error");
-            return;
-        }
-
-        function calculateScale() {
-            let scaleFactor = document.getElementById("scale-factor").value;
-            let sourceWidth = document.getElementById("source-width").value;
-            let sourceHeight = document.getElementById("source-height").value;
-            let newWidth = sourceWidth / scaleFactor;
-            let newHeight = sourceHeight / scaleFactor;
-            let newSize = Math.trunc(newWidth) + "x" + Math.trunc(newHeight);
-
-            document.getElementById("new-size").value = newSize;
-        }
-
-        function disableButtons() {
-            let buttons = document.getElementsByTagName("button");
-            for (let i = 0; i < buttons.length; i++) {
-                buttons[i].disabled = true;
-            }
-        }
-
-        function enableButtons() {
-            let buttons = document.getElementsByTagName("button");
-            for (let i = 0; i < buttons.length; i++) {
-                buttons[i].disabled = false;
-            }
-        }
-
-        let profiles;
-
-        disableButtons();
-        fetch('{{.FrontendUri}}/checkffmpeg')
-            .then(function(response) {
-                enableButtons();
-                return response.json();
-            })
-            .then(function(responseJson) {
-                if (responseJson.Error) {
-                        addOutput("Check FFmpeg error: " + responseJson.Error);
-                } else {
-                    let message = "";
-
-                    if (responseJson.FFmpegExists === false ||
-                        responseJson.FFplayExists === false ||
-                        responseJson.FFprobeExists === false
-                    ) {
-                        message = 'Either FFmpeg or FFplay or FFprobe is missing, please download official releases and include them in the same directory as ffmpeg-clipper or add them to your OS PATH. https://ffmpeg.org/download.html';
-                    }
-
-                    if (message !== "") {
-                        addOutput(message);
-                    } else {
-                        getConfig();
-                        getAvailableVideos();
-                    }
-                }
-            }
-        );
+      document.body.addEventListener('htmx:responseError', function(evt) {
+        console.log(evt.detail.xhr.response);
+        document.getElementById("alert-icon").style.color = "tomato";
+        let alertText = document.getElementById("alert-text");
+        alertText.value = alertText.value + evt.detail.xhr.response + '\n';
+      });
+      const socket = new WebSocket("{{.WsUri}}/active");
+
+      // Connection opened
+      socket.addEventListener("open", (event) => {
+        socket.send("pong");
+      });
+
+      // Listen for messages
+      socket.addEventListener("message", (event) => {
+        socket.send("pong");
+      });
+
+      // Connection closed
+      socket.addEventListener("close", (event) => {
+        alert("Backend is no longer responding, you can close this window.");
+      });
+
+      // Connection error
+      socket.addEventListener("error", (event) => {
+        alert("Backend is no longer responding, you can close this window.");
+      });
     </script>
   </body>
 </html>

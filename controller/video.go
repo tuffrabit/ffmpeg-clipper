@@ -1,83 +1,41 @@
 package controller
 
 import (
-	"encoding/json"
 	"ffmpeg-clipper/common"
 	"ffmpeg-clipper/ffmpeg"
+	"ffmpeg-clipper/html/templ"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-func GetAvailableVideos(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	result := struct {
-		AvailableVideos []string
-	}{}
-
+func GetVideos(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	header := w.Header()
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", "text/html")
 
-	var availableVideos []string
-	dirEntries, err := os.ReadDir("./")
+	component, err := templ.GetAvailableVideosSelect(false)
 	if err != nil {
-		message := fmt.Sprintf("controller.GetAvailableVideos: could not list directory: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
+		handleResponseError(w, fmt.Sprintf("controller.GetVideos: could not get video list %v", err))
 		return
 	}
 
-	allowedExtensions := map[string]struct{}{
-		".mp4":  {},
-		".mkv":  {},
-		".avi":  {},
-		".flv":  {},
-		".mov":  {},
-		".wmv":  {},
-		".ogg":  {},
-		".webm": {},
-	}
-
-	for _, entry := range dirEntries {
-		if !entry.IsDir() {
-			fileExtension := filepath.Ext(entry.Name())
-
-			_, ok := allowedExtensions[fileExtension]
-			if ok {
-				availableVideos = append(availableVideos, entry.Name())
-			}
-		}
-	}
-
-	result.AvailableVideos = availableVideos
-
-	resultBytes, err := json.Marshal(result)
-	if err != nil {
-		message := fmt.Sprintf("controller.GetAvailableVideos: could not marshal struct to json: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-	} else {
-		fmt.Fprint(w, string(resultBytes))
-	}
+	component.Render(r.Context(), w)
 }
 
-func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	video := ps.ByName("name")
-
+func GetVideoPlayer(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	queryValues := r.URL.Query()
+	videoPath := queryValues.Get("path")
 	header := w.Header()
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", "text/html")
 
-	_, err := os.Stat(video)
+	videoPlayerComponent, err := templ.GetVideoPlayer(videoPath)
 	if err != nil {
-		message := fmt.Sprintf("controller.GetVideoDetails: %v does not exist: %v", video, err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
+		handleResponseError(w, fmt.Sprintf("controller.GetVideoPlayer: could not get video player %v", err))
 		return
 	}
 
@@ -91,13 +49,11 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 		"stream=width,height",
 		"-of",
 		"csv=s=x:p=0",
-		video,
+		videoPath,
 	)
 	output, err := common.RunSystemCommand(cmd)
 	if err != nil {
-		message := fmt.Sprintf("controller.GetVideoDetails: ffprobe failed\nstderr: %v\nerr: %v", output, err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
+		handleResponseError(w, fmt.Sprintf("controller.GetVideoDetails: ffprobe failed\nstderr: %v\nerr: %v", output, err))
 		return
 	}
 
@@ -105,136 +61,41 @@ func GetVideoDetails(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	output = strings.TrimSuffix(output, "\n")
 	output = strings.TrimSuffix(output, "\r")
 
-	result := struct {
-		Resolution string
-	}{
-		Resolution: output,
-	}
-
-	resultBytes, err := json.Marshal(result)
-	if err != nil {
-		message := fmt.Sprintf("controller.GetVideoDetails: could not marshal struct to json: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-	} else {
-		fmt.Fprint(w, string(resultBytes))
-	}
+	videoPlayerComponent.Render(r.Context(), w)
+	videoNameComponent := templ.GetVideoNameOutOfBand(videoPath)
+	videoNameComponent.Render(r.Context(), w)
+	videoResolutionComponent := templ.GetVideoResolutionOutOfBand(output)
+	videoResolutionComponent.Render(r.Context(), w)
 }
 
-func PlayVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func DeleteVideo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	videoPath := r.FormValue("path")
 	header := w.Header()
-	header.Set("Content-Type", "application/json")
+	header.Set("Content-Type", "text/html")
 
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		message := fmt.Sprintf("controller.PlayVideo: could not read request body: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	payloadJson := struct {
-		Video           string `json:"video"`
-		AlternatePlayer string `json:"alternatePlayer"`
-	}{}
-	err = json.Unmarshal(bodyBytes, &payloadJson)
-	if err != nil {
-		message := fmt.Sprintf("controller.PlayVideo: could not json marshal request body: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	_, err = os.Stat(payloadJson.Video)
-	if err != nil {
-		message := fmt.Sprintf("controller.PlayVideo: %v does not exist: %v", payloadJson.Video, err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	err = playVideoFile(payloadJson.Video, payloadJson.AlternatePlayer)
-	if err != nil {
-		message := fmt.Sprintf("controller.PlayVideo: could not play video: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	fmt.Fprint(w, "{}")
-}
-
-func DeleteVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	header := w.Header()
-	header.Set("Content-Type", "application/json")
-
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		message := fmt.Sprintf("controller.DeleteVideo: could not read request body: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	payloadJson := struct {
-		Video string `json:"video"`
-	}{}
-	err = json.Unmarshal(bodyBytes, &payloadJson)
-	if err != nil {
-		message := fmt.Sprintf("controller.DeleteVideo: could not json marshal request body: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	_, err = os.Stat(payloadJson.Video)
-	if err != nil {
-		message := fmt.Sprintf("controller.DeleteVideo: %v does not exist: %v", payloadJson.Video, err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	err = os.Remove(payloadJson.Video)
-	if err != nil {
-		message := fmt.Sprintf("controller.DeleteVideo: could not delete video file: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	fmt.Fprint(w, "{}")
-}
-
-func playVideoFile(videoFileName string, alternatePlayerPath string) error {
-	var cmd *exec.Cmd
-
-	if alternatePlayerPath != "" {
-		currentDir, err := os.Getwd()
+	_, err := os.Stat(videoPath)
+	if err == nil {
+		log.Printf("deleteing %v", videoPath)
+		err = os.Remove(videoPath)
 		if err != nil {
-			return fmt.Errorf("controller.playVideoFile: could not get current dir: %w", err)
+			handleResponseError(w, fmt.Sprintf("controller.DeleteVideo: could not delete video file: %v", err))
+			return
 		}
-
-		video := filepath.Join(currentDir, videoFileName)
-		cmd = exec.Command(alternatePlayerPath, video)
-	} else {
-		cmd = exec.Command(ffmpeg.FfplayPath,
-			"-nostats",
-			"-hide_banner",
-			"-loglevel",
-			"error",
-			videoFileName,
-		)
 	}
 
-	cmdOutput, err := common.RunSystemCommand(cmd)
+	availableVideosSelectComponent, err := templ.GetAvailableVideosSelect(true)
 	if err != nil {
-		if err.Error() != cmdOutput {
-			return fmt.Errorf("controller.playVideoFile: could not play video\nstderr: %verr: %w", cmdOutput, err)
-		} else {
-			return fmt.Errorf("controller.playVideoFile: could not play video\nerr: %w", err)
-		}
+		handleResponseError(w, fmt.Sprintf("controller.DeleteVideo: could not get video list %v", err))
+		return
 	}
 
-	return nil
+	videoPlayerComponent, err := templ.GetVideoPlayerOutOfBand("")
+	if err != nil {
+		handleResponseError(w, fmt.Sprintf("controller.DeleteVideo: could not get video player %v", err))
+		return
+	}
+
+	availableVideosSelectComponent.Render(r.Context(), w)
+	videoPlayerComponent.Render(r.Context(), w)
+	templ.GetVideoResolutionOutOfBand("").Render(r.Context(), w)
 }

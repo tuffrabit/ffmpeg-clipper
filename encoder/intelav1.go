@@ -10,20 +10,20 @@ import (
 	"path/filepath"
 )
 
-func ClipIntelHevc(bodyJson map[string]interface{}) (string, error) {
+func ClipIntelAv1(bodyJson map[string]interface{}) (string, error) {
 	commonclipParams, err := getCommonClipParameters(bodyJson)
 	if err != nil {
-		return "", fmt.Errorf("encoder.ClipIntelHevc: could not get common clip params: %w", err)
+		return "", fmt.Errorf("encoder.ClipIntelAv1: could not get common clip params: %w", err)
 	}
 
 	encodingPreset, ok := bodyJson["encodingPreset"].(string)
 	if !ok {
-		return "", errors.New("encoder.ClipIntelHevc: could not determine encoding preset")
+		return "", errors.New("encoder.ClipIntelAv1: could not determine encoding preset")
 	}
 
 	qualityTarget, err := getFloat64FromStringInterface(bodyJson["qualityTarget"])
 	if err != nil {
-		return "", fmt.Errorf("encoder.ClipIntelHevc: could not determine qualityTarget: %w", err)
+		return "", fmt.Errorf("encoder.ClipIntelAv1: could not determine qualityTarget: %w", err)
 	}
 
 	videoExtension := filepath.Ext(commonclipParams.Video)
@@ -42,13 +42,11 @@ func ClipIntelHevc(bodyJson map[string]interface{}) (string, error) {
 		"-i",
 		commonclipParams.Video,
 		"-c:v",
-		"hevc_qsv",
+		"av1_qsv",
 		"-preset",
 		encodingPreset,
 		"-global_quality",
 		fmt.Sprintf("%v", qualityTarget),
-		"-look_ahead",
-		"1",
 		"-vf",
 		fmt.Sprintf("scale=iw/%v:-1:flags=bicubic,exposure=%v:black=%v,eq=saturation=%v:contrast=%v:brightness=%v:gamma=%v",
 			commonclipParams.ScaleFactor,
@@ -63,7 +61,7 @@ func ClipIntelHevc(bodyJson map[string]interface{}) (string, error) {
 	)
 	cmdOutput, err := common.RunSystemCommand(cmd)
 	if err != nil {
-		log.Printf("encoder.ClipIntelHevc: error running ffmpeg: %v\n", cmdOutput)
+		log.Printf("encoder.ClipIntelAv1: error running ffmpeg: %v\n", cmdOutput)
 	}
 
 	return newVideoName, nil

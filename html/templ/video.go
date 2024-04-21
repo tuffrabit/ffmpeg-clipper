@@ -9,13 +9,13 @@ import (
 	"github.com/a-h/templ"
 )
 
-func GetAvailableVideos() (templ.Component, error) {
+func GetAvailableVideosSelect(oob bool) (templ.Component, error) {
 	videos, err := video.GetAvailableVideos()
 	if err != nil {
-		return nil, fmt.Errorf("html/templ/video.GetAvailableVideos: could not get video list: %w", err)
+		return nil, fmt.Errorf("html/templ/video.GetAvailableVideosSelect: could not get video list: %w", err)
 	}
 
-	return templates.GetAvailableVideos(videos), nil
+	return templates.GetAvailableVideosSelect(videos, oob), nil
 }
 
 func GetVideoPlayer(path string) (templ.Component, error) {
@@ -31,10 +31,23 @@ func GetVideoPlayer(path string) (templ.Component, error) {
 	return templates.GetVideoPlayer("streamvideo/" + path), nil
 }
 
-func GetVideoPlayerOutOfBand() templ.Component {
-	return templates.GetVideoPlayerOutOfBand()
+func GetVideoPlayerOutOfBand(path string) (templ.Component, error) {
+	if path == "" {
+		return templates.GetVideoPlayerOutOfBand(""), nil
+	}
+
+	_, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("html/templ/video.GetVideoPlayerOutOfBand: %v does not exist: %w", path, err)
+	}
+
+	return templates.GetVideoPlayerOutOfBand("streamvideo/" + path), nil
 }
 
 func GetVideoResolutionOutOfBand(resolution string) templ.Component {
 	return templates.GetVideoResolutionOutOfBand(resolution)
+}
+
+func GetVideoNameOutOfBand(name string) templ.Component {
+	return templates.GetVideoNameOutOfBand(name)
 }

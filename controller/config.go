@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"encoding/json"
+	"errors"
 	"ffmpeg-clipper/config"
 	"ffmpeg-clipper/html/templ"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -25,12 +25,7 @@ func GetProfiles(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	header := w.Header()
 	header.Set("Content-Type", "text/html")
 
-	component, err := templ.GetProfileNames(config.GetConfig())
-	if err != nil {
-		handleResponseError(w, fmt.Sprintf("controller.GetProfiles: could not get profile list %v", err))
-		return
-	}
-
+	component := templ.GetProfileNames("", config.GetConfig())
 	component.Render(r.Context(), w)
 }
 
@@ -77,6 +72,7 @@ func GetEncoderSettings(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 }
 
 func SaveProfile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	r.ParseForm()
 	profileName := r.FormValue("name")
 
 	if profileName == "" {
@@ -86,24 +82,173 @@ func SaveProfile(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	header := w.Header()
 	header.Set("Content-Type", "text/html")
 
-	log.Printf("Profile to save: %v\n", profileName)
-
-	component, err := templ.GetProfileNames(config.GetConfig())
+	profile, err := getClipProfileJsonFromRequest(profileName, r.Form)
 	if err != nil {
-		handleResponseError(w, fmt.Sprintf("controller.SaveProfile: could not get profile list %v", err))
+		handleResponseError(w, fmt.Sprintf("controller.SaveProfile: could not convert request payload to valid profile %v", err))
 		return
 	}
 
+	err = config.SaveProfile(profile)
+	if err != nil {
+		handleResponseError(w, fmt.Sprintf("controller.SaveProfile: could not save profile %v", err))
+		return
+	}
+
+	component := templ.GetProfileAndList(profileName, config.GetConfig(), *profile)
 	component.Render(r.Context(), w)
+}
 
-	/*err = config.SaveProfile(&payloadJson)
-	if err != nil {
-		message := fmt.Sprintf("controller.SaveProfile: could not save profile: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
+func getClipProfileJsonFromRequest(name string, values url.Values) (*config.ClipProfileJson, error) {
+	profileJson := config.GetProfile(name)
+	if profileJson == nil {
+		profileJson = config.NewProfile(name)
 	}
-	*/
+
+	scaleFactor, err := getFloatValueFromRequest("scale-factor", values)
+	if err != nil {
+		return nil, fmt.Errorf("controller.getConfigProfileJsonFromRequest: scale-factor is invalid: %w", err)
+	}
+
+	if !values.Has("encoder") {
+		return nil, errors.New("controller.getConfigProfileJsonFromRequest: encoder value is required")
+	}
+
+	encoderSettings, err := getEncoderSettingsFromRequest(values)
+	if err != nil {
+		return nil, fmt.Errorf("controller.getConfigProfileJsonFromRequest: could not resolve valid encoder settings %w", err)
+	}
+
+	saturation, err := getFloatValueFromRequest("saturation", values)
+	if err != nil {
+		return nil, fmt.Errorf("controller.getConfigProfileJsonFromRequest: saturation is invalid: %w", err)
+	}
+
+	contrast, err := getFloatValueFromRequest("contrast", values)
+	if err != nil {
+		return nil, fmt.Errorf("controller.getConfigProfileJsonFromRequest: contrast is invalid: %w", err)
+	}
+
+	brightness, err := getFloatValueFromRequest("brightness", values)
+	if err != nil {
+		return nil, fmt.Errorf("controller.getConfigProfileJsonFromRequest: brightness is invalid: %w", err)
+	}
+
+	gamma, err := getFloatValueFromRequest("gamma", values)
+	if err != nil {
+		return nil, fmt.Errorf("controller.getConfigProfileJsonFromRequest: gamma is invalid: %w", err)
+	}
+
+	playAfter := false
+	if values.Has("play-after") {
+		playAfter = true
+	}
+
+	profileJson.ScaleFactor = scaleFactor
+	profileJson.Encoder = config.EncoderType(values.Get("encoder"))
+	profileJson.EncoderSettings.SetEncoderSettings(profileJson.Encoder, *encoderSettings)
+	profileJson.Saturation = saturation
+	profileJson.Contrast = contrast
+	profileJson.Brightness = brightness
+	profileJson.Gamma = gamma
+	profileJson.PlayAfter = playAfter
+
+	return profileJson, nil
+}
+
+func getEncoderSettingsFromRequest(values url.Values) (*config.EncoderSettingsInterface, error) {
+	if !values.Has("quality-target") {
+		return nil, errors.New("controller.getEncoderSettingsFromRequest: quality-target value is required")
+	}
+
+	qualityTargetString := values.Get("quality-target")
+	qualityTarget, err := strconv.ParseInt(qualityTargetString, 0, 0)
+	if err != nil {
+		return nil, fmt.Errorf("controller.getEncoderSettingsFromRequest: %v is an invalid value for quality-target: %w", qualityTargetString, err)
+	}
+
+	encoderPreset := ""
+	if values.Has("encoding-preset") {
+		encoderPreset = values.Get("encoding-preset")
+	}
+
+	encoderType := config.EncoderType(values.Get("encoder"))
+
+	switch encoderType {
+	case config.Libx264EncoderType,
+		config.Libx265EncoderType,
+		config.NvencH264EncoderType,
+		config.NvencHevcEncoderType,
+		config.IntelH264EncoderType,
+		config.IntelHevcEncoderType,
+		config.IntelAv1EncoderType:
+		if encoderPreset == "" {
+			return nil, errors.New("controller.getEncoderSettingsFromRequest: encoding-preset value is required")
+		}
+	}
+
+	var encoderSettings config.EncoderSettingsInterface
+
+	switch encoderType {
+	case config.Libx264EncoderType:
+		encoderSettings = &config.Libx264EncoderSettings{
+			EncodingPreset: encoderPreset,
+			QualityTarget:  int(qualityTarget),
+		}
+	case config.Libx265EncoderType:
+		encoderSettings = &config.Libx265EncoderSettings{
+			EncodingPreset: encoderPreset,
+			QualityTarget:  int(qualityTarget),
+		}
+	case config.LibaomAv1EncoderType:
+		encoderSettings = &config.LibaomAv1EncoderSettings{
+			QualityTarget: int(qualityTarget),
+		}
+	case config.NvencH264EncoderType:
+		encoderSettings = &config.NvencH264EncoderSettings{
+			EncodingPreset: encoderPreset,
+			QualityTarget:  int(qualityTarget),
+		}
+	case config.NvencHevcEncoderType:
+		encoderSettings = &config.NvencHevcEncoderSettings{
+			EncodingPreset: encoderPreset,
+			QualityTarget:  int(qualityTarget),
+		}
+	case config.IntelH264EncoderType:
+		encoderSettings = &config.IntelH264EncoderSettings{
+			EncodingPreset: encoderPreset,
+			QualityTarget:  int(qualityTarget),
+		}
+	case config.IntelHevcEncoderType:
+		encoderSettings = &config.IntelHevcEncoderSettings{
+			EncodingPreset: encoderPreset,
+			QualityTarget:  int(qualityTarget),
+		}
+	case config.IntelAv1EncoderType:
+		encoderSettings = &config.IntelAv1EncoderSettings{
+			EncodingPreset: encoderPreset,
+			QualityTarget:  int(qualityTarget),
+		}
+	}
+
+	if !encoderSettings.Validate() {
+		return nil, errors.New("controller.getEncoderSettingsFromRequest: values are not valid")
+	}
+
+	return &encoderSettings, nil
+}
+
+func getFloatValueFromRequest(name string, values url.Values) (float32, error) {
+	if !values.Has(name) {
+		return 0, fmt.Errorf("controller.getFloatValueFromRequest: %v value is required", name)
+	}
+
+	stringValue := values.Get(name)
+	value, err := strconv.ParseFloat(stringValue, 32)
+	if err != nil {
+		return 0, fmt.Errorf("controller.getFloatValueFromRequest: %v is an invalid value for %v", stringValue, name)
+	}
+
+	return float32(value), nil
 }
 
 func DeleteProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -123,91 +268,6 @@ func DeleteProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		return
 	}
 
-	component, err := templ.GetProfileNames(config.GetConfig())
-	if err != nil {
-		handleResponseError(w, fmt.Sprintf("controller.DeleteProfile: could not get profile list %v", err))
-		return
-	}
-
+	component := templ.GetProfileNames("", config.GetConfig())
 	component.Render(r.Context(), w)
-}
-
-func GetConfig(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	header := w.Header()
-	header.Set("Content-Type", "application/json")
-
-	resultBytes, err := json.Marshal(config.GetConfig())
-	if err != nil {
-		message := fmt.Sprintf("controller.GetConfig: could not marshal struct to json: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-	} else {
-		fmt.Fprint(w, string(resultBytes))
-	}
-}
-
-func SaveProfile2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	header := w.Header()
-	header.Set("Content-Type", "application/json")
-
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		message := fmt.Sprintf("controller.SaveProfile: could not read request body: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	payloadJson := config.ClipProfileJson{}
-	err = json.Unmarshal(bodyBytes, &payloadJson)
-	if err != nil {
-		message := fmt.Sprintf("controller.SaveProfile: could not json marshal request body: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	err = config.SaveProfile(&payloadJson)
-	if err != nil {
-		message := fmt.Sprintf("controller.SaveProfile: could not save profile: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	fmt.Fprint(w, "{}")
-}
-
-func DeleteProfile2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	header := w.Header()
-	header.Set("Content-Type", "application/json")
-
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		message := fmt.Sprintf("controller.DeleteProfile: could not read request body: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	payloadJson := struct {
-		ProfileName string `json:"profileName"`
-	}{}
-	err = json.Unmarshal(bodyBytes, &payloadJson)
-	if err != nil {
-		message := fmt.Sprintf("controller.DeleteProfile: could not json marshal request body: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	err = config.DeleteProfile(payloadJson.ProfileName)
-	if err != nil {
-		message := fmt.Sprintf("controller.DeleteProfile: could not delete profile: %v", err)
-		log.Println(message)
-		fmt.Fprint(w, generateErrorJson(message))
-		return
-	}
-
-	fmt.Fprint(w, "{}")
 }

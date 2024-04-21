@@ -33,18 +33,8 @@ func main() {
 
 	router := httprouter.New()
 	router.GET("/", Index)
-	router.GET("/mainjs", GetMainJs)
 	router.GET("/checkffmpeg", controller.CheckFFmpeg)
-	router.GET("/getavailablevideos", controller.GetAvailableVideos)
-	router.GET("/getvideodetails/:name", controller.GetVideoDetails)
-	router.GET("/getconfig", controller.GetConfig)
-	router.POST("/saveprofile", controller.SaveProfile)
-	router.DELETE("/deleteprofile", controller.DeleteProfile)
-	router.POST("/playvideo", controller.PlayVideo)
-	router.DELETE("/deletevideo", controller.DeleteVideo2)
-	router.POST("/clipvideo", controller.ClipVideo)
 	router.ServeFiles("/streamvideo/*filepath", http.Dir("."))
-
 	router.GET("/active", controller.Active)
 	router.GET("/static/pico.min.css", GetPicoCss)
 	router.GET("/static/htmx.min.js", GetHtmxJs)
@@ -58,6 +48,7 @@ func main() {
 	router.GET("/getencodersettings.html", controller.GetEncoderSettings)
 	router.POST("/saveprofile.html", controller.SaveProfile)
 	router.POST("/deleteprofile.html", controller.DeleteProfile)
+	router.POST("/clip.html", controller.ClipVideo)
 
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {

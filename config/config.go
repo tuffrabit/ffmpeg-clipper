@@ -28,6 +28,8 @@ type ClipProfileJson struct {
 	Contrast        float32                        `json:"contrast"`
 	Brightness      float32                        `json:"brightness"`
 	Gamma           float32                        `json:"gamma"`
+	Exposure        float32                        `json:"exposure"`
+	BlackLevel      float32                        `json:"black_level"`
 	PlayAfter       bool                           `json:"playAfter"`
 }
 
@@ -42,11 +44,85 @@ type ClipProfileJsonEncoderSettings struct {
 	IntelAv1  IntelAv1EncoderSettings  `json:"av1_qsv"`
 }
 
+func (s *ClipProfileJsonEncoderSettings) SetEncoderSettings(t EncoderType, i EncoderSettingsInterface) {
+	switch t {
+	case Libx264EncoderType:
+		val, ok := i.(*Libx264EncoderSettings)
+		if ok {
+			s.Libx264.EncodingPreset = val.EncodingPreset
+			s.Libx264.QualityTarget = val.QualityTarget
+		}
+	case Libx265EncoderType:
+		val, ok := i.(*Libx265EncoderSettings)
+		if ok {
+			s.Libx265.EncodingPreset = val.EncodingPreset
+			s.Libx265.QualityTarget = val.QualityTarget
+		}
+	case LibaomAv1EncoderType:
+		val, ok := i.(*LibaomAv1EncoderSettings)
+		if ok {
+			s.LibaomAv1.QualityTarget = val.QualityTarget
+		}
+	case NvencH264EncoderType:
+		val, ok := i.(*NvencH264EncoderSettings)
+		if ok {
+			s.NvencH264.EncodingPreset = val.EncodingPreset
+			s.NvencH264.QualityTarget = val.QualityTarget
+		}
+	case NvencHevcEncoderType:
+		val, ok := i.(*NvencHevcEncoderSettings)
+		if ok {
+			s.NvencHevc.EncodingPreset = val.EncodingPreset
+			s.NvencHevc.QualityTarget = val.QualityTarget
+		}
+	case IntelH264EncoderType:
+		val, ok := i.(*IntelH264EncoderSettings)
+		if ok {
+			s.IntelH264.EncodingPreset = val.EncodingPreset
+			s.IntelH264.QualityTarget = val.QualityTarget
+		}
+	case IntelHevcEncoderType:
+		val, ok := i.(*IntelHevcEncoderSettings)
+		if ok {
+			s.IntelHevc.EncodingPreset = val.EncodingPreset
+			s.IntelHevc.QualityTarget = val.QualityTarget
+		}
+	case IntelAv1EncoderType:
+		val, ok := i.(*IntelAv1EncoderSettings)
+		if ok {
+			s.IntelAv1.EncodingPreset = val.EncodingPreset
+			s.IntelAv1.QualityTarget = val.QualityTarget
+		}
+	}
+}
+
 type GetEncoderSettingsFunc func() templ.Component
+
+type EncoderSettingsInterface interface {
+	Validate() bool
+	GetEncodingPreset() string
+	GetQualityTarget() int
+}
 
 type Libx264EncoderSettings struct {
 	EncodingPreset string `json:"encodingPreset"`
 	QualityTarget  int    `json:"qualityTarget"`
+}
+
+func (s Libx264EncoderSettings) Validate() bool {
+	if s.QualityTarget < 0 || s.QualityTarget > 51 {
+		return false
+	}
+
+	return true
+}
+
+func (s Libx264EncoderSettings) GetEncodingPreset() string {
+	return s.EncodingPreset
+}
+
+func (s Libx264EncoderSettings) GetQualityTarget() int {
+	return s.QualityTarget
 }
 
 type Libx265EncoderSettings struct {
@@ -54,8 +130,40 @@ type Libx265EncoderSettings struct {
 	QualityTarget  int    `json:"qualityTarget"`
 }
 
+func (s Libx265EncoderSettings) Validate() bool {
+	if s.QualityTarget < 0 || s.QualityTarget > 51 {
+		return false
+	}
+
+	return true
+}
+
+func (s Libx265EncoderSettings) GetEncodingPreset() string {
+	return s.EncodingPreset
+}
+
+func (s Libx265EncoderSettings) GetQualityTarget() int {
+	return s.QualityTarget
+}
+
 type LibaomAv1EncoderSettings struct {
 	QualityTarget int `json:"qualityTarget"`
+}
+
+func (s LibaomAv1EncoderSettings) Validate() bool {
+	if s.QualityTarget < 0 || s.QualityTarget > 63 {
+		return false
+	}
+
+	return true
+}
+
+func (s LibaomAv1EncoderSettings) GetEncodingPreset() string {
+	return ""
+}
+
+func (s LibaomAv1EncoderSettings) GetQualityTarget() int {
+	return s.QualityTarget
 }
 
 type NvencH264EncoderSettings struct {
@@ -63,9 +171,41 @@ type NvencH264EncoderSettings struct {
 	QualityTarget  int    `json:"qualityTarget"`
 }
 
+func (s NvencH264EncoderSettings) Validate() bool {
+	if s.QualityTarget < 0 || s.QualityTarget > 51 {
+		return false
+	}
+
+	return true
+}
+
+func (s NvencH264EncoderSettings) GetEncodingPreset() string {
+	return s.EncodingPreset
+}
+
+func (s NvencH264EncoderSettings) GetQualityTarget() int {
+	return s.QualityTarget
+}
+
 type NvencHevcEncoderSettings struct {
 	EncodingPreset string `json:"encodingPreset"`
 	QualityTarget  int    `json:"qualityTarget"`
+}
+
+func (s NvencHevcEncoderSettings) Validate() bool {
+	if s.QualityTarget < 0 || s.QualityTarget > 51 {
+		return false
+	}
+
+	return true
+}
+
+func (s NvencHevcEncoderSettings) GetEncodingPreset() string {
+	return s.EncodingPreset
+}
+
+func (s NvencHevcEncoderSettings) GetQualityTarget() int {
+	return s.QualityTarget
 }
 
 type IntelH264EncoderSettings struct {
@@ -73,14 +213,62 @@ type IntelH264EncoderSettings struct {
 	QualityTarget  int    `json:"qualityTarget"`
 }
 
+func (s IntelH264EncoderSettings) Validate() bool {
+	if s.QualityTarget < 1 || s.QualityTarget > 51 {
+		return false
+	}
+
+	return true
+}
+
+func (s IntelH264EncoderSettings) GetEncodingPreset() string {
+	return s.EncodingPreset
+}
+
+func (s IntelH264EncoderSettings) GetQualityTarget() int {
+	return s.QualityTarget
+}
+
 type IntelHevcEncoderSettings struct {
 	EncodingPreset string `json:"encodingPreset"`
 	QualityTarget  int    `json:"qualityTarget"`
 }
 
+func (s IntelHevcEncoderSettings) Validate() bool {
+	if s.QualityTarget < 1 || s.QualityTarget > 51 {
+		return false
+	}
+
+	return true
+}
+
+func (s IntelHevcEncoderSettings) GetEncodingPreset() string {
+	return s.EncodingPreset
+}
+
+func (s IntelHevcEncoderSettings) GetQualityTarget() int {
+	return s.QualityTarget
+}
+
 type IntelAv1EncoderSettings struct {
 	EncodingPreset string `json:"encodingPreset"`
 	QualityTarget  int    `json:"qualityTarget"`
+}
+
+func (s IntelAv1EncoderSettings) Validate() bool {
+	if s.QualityTarget < 1 || s.QualityTarget > 51 {
+		return false
+	}
+
+	return true
+}
+
+func (s IntelAv1EncoderSettings) GetEncodingPreset() string {
+	return s.EncodingPreset
+}
+
+func (s IntelAv1EncoderSettings) GetQualityTarget() int {
+	return s.QualityTarget
 }
 
 type EncoderType string
@@ -95,6 +283,72 @@ const (
 	IntelHevcEncoderType EncoderType = "hevc_qsv"
 	IntelAv1EncoderType  EncoderType = "av1_qsv"
 )
+
+func NewProfile(name string) *ClipProfileJson {
+	libx264EncoderSettings := Libx264EncoderSettings{
+		EncodingPreset: "slow",
+		QualityTarget:  24,
+	}
+
+	libx265EncoderSettings := Libx265EncoderSettings{
+		EncodingPreset: "slow",
+		QualityTarget:  29,
+	}
+
+	libaomAv1EncoderSettings := LibaomAv1EncoderSettings{
+		QualityTarget: 29,
+	}
+
+	nvencH264EncoderSettings := NvencH264EncoderSettings{
+		EncodingPreset: "p4",
+		QualityTarget:  26,
+	}
+
+	nvencHevcEncoderSettings := NvencHevcEncoderSettings{
+		EncodingPreset: "p4",
+		QualityTarget:  31,
+	}
+
+	intelH264EncoderSettings := IntelH264EncoderSettings{
+		EncodingPreset: "medium",
+		QualityTarget:  29,
+	}
+
+	intelHevcEncoderSettings := IntelHevcEncoderSettings{
+		EncodingPreset: "medium",
+		QualityTarget:  31,
+	}
+
+	intelAv1EncoderSettings := IntelAv1EncoderSettings{
+		EncodingPreset: "medium",
+		QualityTarget:  33,
+	}
+
+	encoderSettings := ClipProfileJsonEncoderSettings{
+		Libx264:   libx264EncoderSettings,
+		Libx265:   libx265EncoderSettings,
+		LibaomAv1: libaomAv1EncoderSettings,
+		NvencH264: nvencH264EncoderSettings,
+		NvencHevc: nvencHevcEncoderSettings,
+		IntelH264: intelH264EncoderSettings,
+		IntelHevc: intelHevcEncoderSettings,
+		IntelAv1:  intelAv1EncoderSettings,
+	}
+
+	return &ClipProfileJson{
+		ProfileName:     name,
+		ScaleFactor:     2.666,
+		Encoder:         Libx264EncoderType,
+		EncoderSettings: encoderSettings,
+		Saturation:      1,
+		Contrast:        1,
+		Brightness:      0,
+		Gamma:           1,
+		Exposure:        0,
+		BlackLevel:      0,
+		PlayAfter:       true,
+	}
+}
 
 func GetEncoderTypes() map[EncoderType]string {
 	m := make(map[EncoderType]string)
@@ -335,6 +589,8 @@ func generateDefaultConfigJson() ConfigJson {
 		Contrast:        1.1,
 		Brightness:      0,
 		Gamma:           1,
+		Exposure:        0,
+		BlackLevel:      0,
 		PlayAfter:       true,
 	}
 
@@ -347,6 +603,8 @@ func generateDefaultConfigJson() ConfigJson {
 		Contrast:        1.1,
 		Brightness:      0.1,
 		Gamma:           1,
+		Exposure:        0,
+		BlackLevel:      0,
 		PlayAfter:       true,
 	}
 
@@ -359,6 +617,8 @@ func generateDefaultConfigJson() ConfigJson {
 		Contrast:        1,
 		Brightness:      0,
 		Gamma:           1,
+		Exposure:        0,
+		BlackLevel:      0,
 		PlayAfter:       true,
 	}
 

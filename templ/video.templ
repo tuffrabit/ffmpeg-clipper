@@ -1,19 +1,42 @@
 package templ
 
-templ GetAvailableVideos(videos []string) {
-	for _, v := range videos {
-        <option value={ v }>{ v }</option>
-    }
+templ GetAvailableVideosSelect(videos []string, oob bool) {
+    <select
+        id="available-videos-select"
+        aria-label="Videos"
+        size="6"
+        hx-swap="innerHTML"
+        if oob {
+            hx-swap-oob="outerHTML:#available-videos-select"
+        }
+        style="margin-bottom:13px;">
+        for _, v := range videos {
+            <option value={ v }>{ v }</option>
+        }
+    </select>
 }
 
 templ GetVideoPlayer(path string) {
     <video id="video-player" src={ path } style="width:100%;height:auto" controls autoplay></video>
 }
 
-templ GetVideoPlayerOutOfBand() {
-    <video id="video-player" hx-swap-oob="outerHTML:#video-player" style="width:100%;height:auto" controls autoplay></video>
+templ GetVideoPlayerOutOfBand(path string) {
+    <video
+        id="video-player"
+        if path != "" {
+            src={ path }
+        }
+        hx-swap-oob="outerHTML:#video-player"
+        style="width:100%;height:auto"
+        controls
+        autoplay
+    ></video>
 }
 
 templ GetVideoResolutionOutOfBand(resolution string) {
     <p hx-swap-oob="innerHTML:#video-resolution">Resolution: { resolution }</p>
+}
+
+templ GetVideoNameOutOfBand(name string) {
+    <div hx-swap-oob="innerHTML:#video-title"><strong>{ name }</strong></div>
 }

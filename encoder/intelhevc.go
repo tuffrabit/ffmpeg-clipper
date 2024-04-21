@@ -21,9 +21,9 @@ func ClipIntelHevc(bodyJson map[string]interface{}) (string, error) {
 		return "", errors.New("encoder.ClipIntelHevc: could not determine encoding preset")
 	}
 
-	qualityTarget, ok := bodyJson["qualityTarget"].(float64)
-	if !ok {
-		return "", errors.New("encoder.ClipIntelHevc: could not determine quality target")
+	qualityTarget, err := getFloat64FromStringInterface(bodyJson["qualityTarget"])
+	if err != nil {
+		return "", fmt.Errorf("encoder.ClipIntelHevc: could not determine qualityTarget: %w", err)
 	}
 
 	videoExtension := filepath.Ext(commonclipParams.Video)
@@ -50,8 +50,10 @@ func ClipIntelHevc(bodyJson map[string]interface{}) (string, error) {
 		"-look_ahead",
 		"1",
 		"-vf",
-		fmt.Sprintf("scale=iw/%v:-1:flags=bicubic,eq=saturation=%v:contrast=%v:brightness=%v:gamma=%v",
+		fmt.Sprintf("scale=iw/%v:-1:flags=bicubic,exposure=%v:black=%v,eq=saturation=%v:contrast=%v:brightness=%v:gamma=%v",
 			commonclipParams.ScaleFactor,
+			commonclipParams.Exposure,
+			commonclipParams.BlackLevel,
 			commonclipParams.Saturation,
 			commonclipParams.Contrast,
 			commonclipParams.Brightness,

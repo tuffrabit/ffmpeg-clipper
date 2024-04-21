@@ -28,12 +28,12 @@ templ GetEncoderSettings(encoderType config.EncoderType, settings config.ClipPro
 
 var libx264Presets = [9]string{"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-templ GetLibx264EncoderSettings(settings config.Libx264EncoderSettings) {
+templ GetLibx264EncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="encoding-preset">Encoding Preset</label>
         <select id="libx264-encoding-preset" name="encoding-preset">
             for _, p := range libx264Presets {
-                if settings.EncodingPreset == p {
+                if settings.GetEncodingPreset() == p {
                     <option value={ p } selected>{ p }</option>
                 } else {
                     <option value={ p }>{ p }</option>
@@ -43,18 +43,18 @@ templ GetLibx264EncoderSettings(settings config.Libx264EncoderSettings) {
     </div>
     <div>
         <label for="quality-target">Quality Target (0 to 51)</label>
-        <input id="libx264-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.QualityTarget) } />
+        <input id="libx264-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
 var libx265Presets = [9]string{"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-templ GetLibx265EncoderSettings(settings config.Libx265EncoderSettings) {
+templ GetLibx265EncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="encoding-preset">Encoding Preset</label>
         <select id="libx265-encoding-preset" name="encoding-preset">
             for _, p := range libx265Presets {
-                if settings.EncodingPreset == p {
+                if settings.GetEncodingPreset() == p {
                     <option value={ p } selected>{ p }</option>
                 } else {
                     <option value={ p }>{ p }</option>
@@ -64,14 +64,14 @@ templ GetLibx265EncoderSettings(settings config.Libx265EncoderSettings) {
     </div>
     <div>
         <label for="quality-target">Quality Target (0 to 51)</label>
-        <input id="libx265-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.QualityTarget) } />
+        <input id="libx265-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
-templ GetAomAv1EncoderSettings(settings config.LibaomAv1EncoderSettings) {
+templ GetAomAv1EncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="quality-target">Quality Target (0 to 63)</label>
-        <input id="libaom-av1-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.QualityTarget) } />
+        <input id="libaom-av1-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
@@ -85,12 +85,12 @@ var nvenc264Presets = map[string]string{
     "p7": "slowest",
 }
 
-templ GetNvenc264EncoderSettings(settings config.NvencH264EncoderSettings) {
+templ GetNvenc264EncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="encoding-preset">Encoding Preset</label>
         <select id="h264_nvenc-encoding-preset" name="encoding-preset">
             for p, v := range nvenc264Presets {
-                if settings.EncodingPreset == p {
+                if settings.GetEncodingPreset() == p {
                     <option value={ p } selected>{ v }</option>
                 } else {
                     <option value={ p }>{ v }</option>
@@ -100,7 +100,7 @@ templ GetNvenc264EncoderSettings(settings config.NvencH264EncoderSettings) {
     </div>
     <div>
         <label for="quality-target">Quality Target (0 to 51)</label>
-        <input id="h264_nvenc-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.QualityTarget) } />
+        <input id="h264_nvenc-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
@@ -114,12 +114,12 @@ var nvencHevcPresets = map[string]string{
     "p7": "slowest",
 }
 
-templ GetNvencHevcEncoderSettings(settings config.NvencHevcEncoderSettings) {
+templ GetNvencHevcEncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="encoding-preset">Encoding Preset</label>
         <select id="hevc_nvenc-encoding-preset" name="encoding-preset">
             for p, v := range nvencHevcPresets {
-                if settings.EncodingPreset == p {
+                if settings.GetEncodingPreset() == p {
                     <option value={ p } selected>{ v }</option>
                 } else {
                     <option value={ p }>{ v }</option>
@@ -129,18 +129,18 @@ templ GetNvencHevcEncoderSettings(settings config.NvencHevcEncoderSettings) {
     </div>
     <div>
         <label for="quality-target">Quality Target (0 to 51)</label>
-        <input id="hevc_nvenc-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.QualityTarget) } />
+        <input id="hevc_nvenc-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
 var intelh264Presets = [7]string{"veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-templ GetIntelH264EncoderSettings(settings config.IntelH264EncoderSettings) {
+templ GetIntelH264EncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="encoding-preset">Encoding Preset</label>
         <select id="h264_qsv-encoding-preset" name="encoding-preset">
             for _, p := range intelh264Presets {
-                if settings.EncodingPreset == p {
+                if settings.GetEncodingPreset() == p {
                     <option value={ p } selected>{ p }</option>
                 } else {
                     <option value={ p }>{ p }</option>
@@ -150,18 +150,18 @@ templ GetIntelH264EncoderSettings(settings config.IntelH264EncoderSettings) {
     </div>
     <div>
         <label for="quality-target">Quality Target (1 to 51)</label>
-        <input id="h264_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.QualityTarget) } />
+        <input id="h264_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
 var intelHevcPresets = [7]string{"veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-templ GetIntelHevcEncoderSettings(settings config.IntelHevcEncoderSettings) {
+templ GetIntelHevcEncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="encoding-preset">Encoding Preset</label>
         <select id="hevc_qsv-encoding-preset" name="encoding-preset">
             for _, p := range intelHevcPresets {
-                if settings.EncodingPreset == p {
+                if settings.GetEncodingPreset() == p {
                     <option value={ p } selected>{ p }</option>
                 } else {
                     <option value={ p }>{ p }</option>
@@ -171,18 +171,18 @@ templ GetIntelHevcEncoderSettings(settings config.IntelHevcEncoderSettings) {
     </div>
     <div>
         <label for="quality-target">Quality Target (1 to 51)</label>
-        <input id="hevc_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.QualityTarget) } />
+        <input id="hevc_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
 var intelAv1Presets = [7]string{"veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-templ GetIntelAv1EncoderSettings(settings config.IntelAv1EncoderSettings) {
+templ GetIntelAv1EncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="encoding-preset">Encoding Preset</label>
         <select id="av1_qsv-encoding-preset" name="encoding-preset">
             for _, p := range intelAv1Presets {
-                if settings.EncodingPreset == p {
+                if settings.GetEncodingPreset() == p {
                     <option value={ p } selected>{ p }</option>
                 } else {
                     <option value={ p }>{ p }</option>
@@ -192,6 +192,6 @@ templ GetIntelAv1EncoderSettings(settings config.IntelAv1EncoderSettings) {
     </div>
     <div>
         <label for="quality-target">Quality Target (1 to 51)</label>
-        <input id="av1_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.QualityTarget) } />
+        <input id="av1_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }

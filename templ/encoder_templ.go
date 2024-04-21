@@ -79,7 +79,7 @@ func GetEncoderSettings(encoderType config.EncoderType, settings config.ClipProf
 
 var libx264Presets = [9]string{"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-func GetLibx264EncoderSettings(settings config.Libx264EncoderSettings) templ.Component {
+func GetLibx264EncoderSettings(settings config.EncoderSettingsInterface) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -97,7 +97,7 @@ func GetLibx264EncoderSettings(settings config.Libx264EncoderSettings) templ.Com
 			return templ_7745c5c3_Err
 		}
 		for _, p := range libx264Presets {
-			if settings.EncodingPreset == p {
+			if settings.GetEncodingPreset() == p {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -155,7 +155,7 @@ func GetLibx264EncoderSettings(settings config.Libx264EncoderSettings) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.QualityTarget)))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.GetQualityTarget())))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -172,7 +172,7 @@ func GetLibx264EncoderSettings(settings config.Libx264EncoderSettings) templ.Com
 
 var libx265Presets = [9]string{"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-func GetLibx265EncoderSettings(settings config.Libx265EncoderSettings) templ.Component {
+func GetLibx265EncoderSettings(settings config.EncoderSettingsInterface) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -190,7 +190,7 @@ func GetLibx265EncoderSettings(settings config.Libx265EncoderSettings) templ.Com
 			return templ_7745c5c3_Err
 		}
 		for _, p := range libx265Presets {
-			if settings.EncodingPreset == p {
+			if settings.GetEncodingPreset() == p {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -248,7 +248,7 @@ func GetLibx265EncoderSettings(settings config.Libx265EncoderSettings) templ.Com
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.QualityTarget)))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.GetQualityTarget())))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -263,7 +263,7 @@ func GetLibx265EncoderSettings(settings config.Libx265EncoderSettings) templ.Com
 	})
 }
 
-func GetAomAv1EncoderSettings(settings config.LibaomAv1EncoderSettings) templ.Component {
+func GetAomAv1EncoderSettings(settings config.EncoderSettingsInterface) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -280,7 +280,7 @@ func GetAomAv1EncoderSettings(settings config.LibaomAv1EncoderSettings) templ.Co
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.QualityTarget)))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.GetQualityTarget())))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -305,7 +305,7 @@ var nvenc264Presets = map[string]string{
 	"p7": "slowest",
 }
 
-func GetNvenc264EncoderSettings(settings config.NvencH264EncoderSettings) templ.Component {
+func GetNvenc264EncoderSettings(settings config.EncoderSettingsInterface) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -323,7 +323,7 @@ func GetNvenc264EncoderSettings(settings config.NvencH264EncoderSettings) templ.
 			return templ_7745c5c3_Err
 		}
 		for p, v := range nvenc264Presets {
-			if settings.EncodingPreset == p {
+			if settings.GetEncodingPreset() == p {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -381,7 +381,7 @@ func GetNvenc264EncoderSettings(settings config.NvencH264EncoderSettings) templ.
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.QualityTarget)))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.GetQualityTarget())))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -406,7 +406,7 @@ var nvencHevcPresets = map[string]string{
 	"p7": "slowest",
 }
 
-func GetNvencHevcEncoderSettings(settings config.NvencHevcEncoderSettings) templ.Component {
+func GetNvencHevcEncoderSettings(settings config.EncoderSettingsInterface) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -424,7 +424,7 @@ func GetNvencHevcEncoderSettings(settings config.NvencHevcEncoderSettings) templ
 			return templ_7745c5c3_Err
 		}
 		for p, v := range nvencHevcPresets {
-			if settings.EncodingPreset == p {
+			if settings.GetEncodingPreset() == p {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -482,7 +482,7 @@ func GetNvencHevcEncoderSettings(settings config.NvencHevcEncoderSettings) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.QualityTarget)))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.GetQualityTarget())))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -499,7 +499,7 @@ func GetNvencHevcEncoderSettings(settings config.NvencHevcEncoderSettings) templ
 
 var intelh264Presets = [7]string{"veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-func GetIntelH264EncoderSettings(settings config.IntelH264EncoderSettings) templ.Component {
+func GetIntelH264EncoderSettings(settings config.EncoderSettingsInterface) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -517,7 +517,7 @@ func GetIntelH264EncoderSettings(settings config.IntelH264EncoderSettings) templ
 			return templ_7745c5c3_Err
 		}
 		for _, p := range intelh264Presets {
-			if settings.EncodingPreset == p {
+			if settings.GetEncodingPreset() == p {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -575,7 +575,7 @@ func GetIntelH264EncoderSettings(settings config.IntelH264EncoderSettings) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.QualityTarget)))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.GetQualityTarget())))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -592,7 +592,7 @@ func GetIntelH264EncoderSettings(settings config.IntelH264EncoderSettings) templ
 
 var intelHevcPresets = [7]string{"veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-func GetIntelHevcEncoderSettings(settings config.IntelHevcEncoderSettings) templ.Component {
+func GetIntelHevcEncoderSettings(settings config.EncoderSettingsInterface) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -610,7 +610,7 @@ func GetIntelHevcEncoderSettings(settings config.IntelHevcEncoderSettings) templ
 			return templ_7745c5c3_Err
 		}
 		for _, p := range intelHevcPresets {
-			if settings.EncodingPreset == p {
+			if settings.GetEncodingPreset() == p {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -668,7 +668,7 @@ func GetIntelHevcEncoderSettings(settings config.IntelHevcEncoderSettings) templ
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.QualityTarget)))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.GetQualityTarget())))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -685,7 +685,7 @@ func GetIntelHevcEncoderSettings(settings config.IntelHevcEncoderSettings) templ
 
 var intelAv1Presets = [7]string{"veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"}
 
-func GetIntelAv1EncoderSettings(settings config.IntelAv1EncoderSettings) templ.Component {
+func GetIntelAv1EncoderSettings(settings config.EncoderSettingsInterface) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -703,7 +703,7 @@ func GetIntelAv1EncoderSettings(settings config.IntelAv1EncoderSettings) templ.C
 			return templ_7745c5c3_Err
 		}
 		for _, p := range intelAv1Presets {
-			if settings.EncodingPreset == p {
+			if settings.GetEncodingPreset() == p {
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<option value=\"")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -761,7 +761,7 @@ func GetIntelAv1EncoderSettings(settings config.IntelAv1EncoderSettings) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.QualityTarget)))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(fmt.Sprintf("%d", settings.GetQualityTarget())))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

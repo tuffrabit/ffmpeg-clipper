@@ -7,6 +7,23 @@
     <script src="static/htmx.min.js" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
     <script src="static/modal.js"></script>
     <script src="static/main.js"></script>
+    <style>
+      body { 
+        zoom: 0.75;
+        -ms-zoom: 0.75;
+        -webkit-zoom: 0.75;
+        -moz-transform: scale(0.75);
+        -moz-transform-origin: left top;
+      }
+
+      #current-profile-form {
+        zoom: 0.7;
+        -ms-zoom: 0.7;
+        -webkit-zoom: 0.7;
+        -moz-transform: scale(0.7);
+        -moz-transform-origin: left top;
+      }
+    </style>
     <title>ffmpeg-clipper {{.HomeDirectory}}</title>
   </head>
   <body>
@@ -39,8 +56,8 @@
         <div class="container">
           <div>
             <h6>Videos</h6>
-            <button hx-trigger="click" hx-get="/videos.html" hx-target="#available-videos-select" hx-swap="innerHTML" style="margin-bottom:13px;">Refresh List</button>
-            <select id="available-videos-select" aria-label="Videos" multiple size="6" hx-trigger="load" hx-get="/videos.html" hx-swap="innerHTML" style="margin-bottom:13px;"></select>
+            <button hx-trigger="click" hx-get="/videos.html" hx-target="#available-videos-select" hx-swap="outerHTML" style="margin-bottom:13px;">Refresh List</button>
+            {{.AvailableVideosSelect}}
             <div role="group">
               <button
                 hx-trigger="click"
@@ -68,12 +85,14 @@
                 hx-target="#profiles-select"
                 hx-swap="innerHTML"
                 hx-confirm="Are you sure you wish to overwrite the selected profile?"
+                hx-include="#current-profile-form"
                 hx-vals='js:{name: getSelectedProfile().value}'>Save</button>
               <button
                 hx-trigger="click"
                 hx-post="/saveprofile.html"
                 hx-target="#profiles-select"
                 hx-swap="innerHTML"
+                hx-include="#current-profile-form"
                 hx-prompt="New profile name?">Save New</button>
               <button
                 hx-trigger="click"
@@ -87,21 +106,27 @@
           </div>
         </div>
         <div>
+          <div id="video-title"><strong></strong></div>
           <video id="video-player" style="width:100%;height:auto" controls autoplay></video>
           <div id="video-resolution"></div>
+          <div>
+            <button onclick="setClipStart()">Set Clip Start</button>
+            <button onclick="setClipStop()">Set Clip Stop</button>
+            <button onclick="closeVideo()">Close Video</button>
+          </div>
         </div>
         <div>
-          <form>
+          <form id="current-profile-form">
             <div>
               <label for="start-time">Start (hh:mm:ss)</label>
-              <input id="start-time" type="text" value="00:00:00" />
+              <input id="start-time" name="start-time" type="text" value="00:00:00" />
             </div>
             <div>
               <label for="end-time">End (hh:mm:ss)</label>
-              <input id="end-time" type="text" value="00:00:00" />
+              <input id="end-time" name="end-time" type="text" value="00:00:00" />
             </div>
             <div id="profile-form" hx-trigger="change from:#profiles-select" hx-get="/getprofile.html" hx-swap="innerHTML" hx-vals='js:{name: getSelectedProfile().value}' style="margin-bottom:13px;"></div>
-            <button>Clip</button>
+            <button hx-trigger="click" hx-post="/clip.html" hx-vals='js:{video: getSelectedVideo().value}'>Clip</button>
           </form>
         </div>
       </div>

@@ -5,16 +5,25 @@ import (
     "ffmpeg-clipper/config"
 )
 
-templ GetProfileNames(videos []string) {
-	for _, v := range videos {
-        <option value={ v }>{ v }</option>
+templ GetProfileAndList(selectedProfile string, profiles []string, profile config.ClipProfileJson) {
+    @GetProfileNames(selectedProfile, profiles)
+    <span hx-swap-oob="innerHTML:#profile-form">@GetProfile(profile)</span>
+}
+
+templ GetProfileNames(selectedProfile string, profiles []string) {
+	for _, p := range profiles {
+        if p == selectedProfile {
+            <option value={ p } selected>{ p }</option>
+        } else {
+            <option value={ p }>{ p }</option>
+        }
     }
 }
 
 templ GetProfile(profile config.ClipProfileJson) {
     <div>
         <label for="scale-factor">Scale Down Factor</label>
-        <input id="scale-factor" type="text" value={ fmt.Sprintf("%f", profile.ScaleFactor) } />
+        <input id="scale-factor" name="scale-factor" type="text" value={ fmt.Sprintf("%f", profile.ScaleFactor) } />
     </div>
     <div>
         <label for="encoder">Encoder</label>
@@ -33,25 +42,33 @@ templ GetProfile(profile config.ClipProfileJson) {
     </div>
     <div>
         <label for="saturation" title="Default 1">Saturation (0.0 to 3.0)</label>
-        <input id="saturation" type="text" value={ fmt.Sprintf("%f", profile.Saturation) } title="Default 1" />
+        <input id="saturation" name="saturation" type="text" value={ fmt.Sprintf("%f", profile.Saturation) } title="Default 1" />
     </div>
     <div>
         <label for="contrast" title="Default 1">Contrast (-1000.0 to 1000.0)</label>
-        <input id="contrast" type="text" value={ fmt.Sprintf("%f", profile.Contrast) } title="Default 1" />
+        <input id="contrast" name="contrast" type="text" value={ fmt.Sprintf("%f", profile.Contrast) } title="Default 1" />
     </div>
     <div>
         <label for="brightness" title="Default 0">Brightness (-1.0 to 1.0)</label>
-        <input id="brightness" type="text" value={ fmt.Sprintf("%f", profile.Brightness) } title="Default 0" />
+        <input id="brightness" name="brightness" type="text" value={ fmt.Sprintf("%f", profile.Brightness) } title="Default 0" />
     </div>
     <div>
         <label for="gamma" title="Default 1">Gamma (0.1 to 10.0)</label>
-        <input id="gamma" type="text" value={ fmt.Sprintf("%f", profile.Gamma) } title="Default 1" />
+        <input id="gamma" name="gamma" type="text" value={ fmt.Sprintf("%f", profile.Gamma) } title="Default 1" />
+    </div>
+    <div>
+        <label for="exposure" title="Default 0">Exposure (-3.0 to 3.0)</label>
+        <input id="exposure" name="exposure" type="text" value={ fmt.Sprintf("%f", profile.Exposure) } title="Default 0" />
+    </div>
+    <div>
+        <label for="black-level" title="Default 0">Black Level (-1.0 to 1.0)</label>
+        <input id="black-level" name="black-level" type="text" value={ fmt.Sprintf("%f", profile.BlackLevel) } title="Default 0" />
     </div>
     <div>
         if profile.PlayAfter {
-            <input id="play-after" type="checkbox" role="switch" checked />
+            <input id="play-after" name="play-after" type="checkbox" role="switch" checked />
         } else {
-            <input id="play-after" type="checkbox" role="switch" />
+            <input id="play-after" name="play-after" type="checkbox" role="switch" />
         }
         <label for="play-after">Play clip when done</label>
     </div>

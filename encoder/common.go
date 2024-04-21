@@ -3,6 +3,8 @@ package encoder
 import (
 	"errors"
 	"ffmpeg-clipper/config"
+	"fmt"
+	"strconv"
 )
 
 type CommonClipParameters struct {
@@ -15,6 +17,8 @@ type CommonClipParameters struct {
 	Contrast        float64            `json:"contrast"`
 	Brightness      float64            `json:"brightness"`
 	Gamma           float64            `json:"gamma"`
+	Exposure        float64            `json:"exposure"`
+	BlackLevel      float64            `json:"blackLevel"`
 	PlayAfter       bool               `json:"playAfter"`
 	AlternatePlayer string             `json:"alternatePlayer"`
 }
@@ -35,29 +39,39 @@ func getCommonClipParameters(bodyJson map[string]interface{}) (*CommonClipParame
 		return nil, errors.New("encoder.getCommonClipParameters: could not determine end time")
 	}
 
-	scaleFactor, ok := bodyJson["scaleFactor"].(float64)
-	if !ok {
-		return nil, errors.New("encoder.getCommonClipParameters: could not determine scale factor")
+	scaleFactor, err := getFloat64FromStringInterface(bodyJson["scaleFactor"])
+	if err != nil {
+		return nil, fmt.Errorf("encoder.getCommonClipParameters: could not determine scale factor: %w", err)
 	}
 
-	saturation, ok := bodyJson["saturation"].(float64)
-	if !ok {
-		return nil, errors.New("encoder.getCommonClipParameters: could not determine saturation")
+	saturation, err := getFloat64FromStringInterface(bodyJson["saturation"])
+	if err != nil {
+		return nil, fmt.Errorf("encoder.getCommonClipParameters: could not determine saturation: %w", err)
 	}
 
-	contrast, ok := bodyJson["contrast"].(float64)
-	if !ok {
-		return nil, errors.New("encoder.getCommonClipParameters: could not determine contrast")
+	contrast, err := getFloat64FromStringInterface(bodyJson["contrast"])
+	if err != nil {
+		return nil, fmt.Errorf("encoder.getCommonClipParameters: could not determine contrast: %w", err)
 	}
 
-	brightness, ok := bodyJson["brightness"].(float64)
-	if !ok {
-		return nil, errors.New("encoder.getCommonClipParameters: could not determine brightness")
+	brightness, err := getFloat64FromStringInterface(bodyJson["brightness"])
+	if err != nil {
+		return nil, fmt.Errorf("encoder.getCommonClipParameters: could not determine brightness: %w", err)
 	}
 
-	gamma, ok := bodyJson["gamma"].(float64)
-	if !ok {
-		return nil, errors.New("encoder.getCommonClipParameters: could not determine gamma")
+	gamma, err := getFloat64FromStringInterface(bodyJson["gamma"])
+	if err != nil {
+		return nil, fmt.Errorf("encoder.getCommonClipParameters: could not determine gamma: %w", err)
+	}
+
+	exposure, err := getFloat64FromStringInterface(bodyJson["exposure"])
+	if err != nil {
+		return nil, fmt.Errorf("encoder.getCommonClipParameters: could not determine exposure: %w", err)
+	}
+
+	blackLevel, err := getFloat64FromStringInterface(bodyJson["blackLevel"])
+	if err != nil {
+		return nil, fmt.Errorf("encoder.getCommonClipParameters: could not determine blackLevel: %w", err)
 	}
 
 	return &CommonClipParameters{
@@ -69,5 +83,21 @@ func getCommonClipParameters(bodyJson map[string]interface{}) (*CommonClipParame
 		Contrast:    contrast,
 		Brightness:  brightness,
 		Gamma:       gamma,
+		Exposure:    exposure,
+		BlackLevel:  blackLevel,
 	}, nil
+}
+
+func getFloat64FromStringInterface(value interface{}) (float64, error) {
+	stringValue, ok := value.(string)
+	if !ok {
+		return 0, errors.New("encoder.getFloat64FromStringInterface: string could not be asserted")
+	}
+
+	floatValue, err := strconv.ParseFloat(stringValue, 64)
+	if err != nil {
+		return 0, fmt.Errorf("encoder.getFloat64FromStringInterface: could not parse float: %w", err)
+	}
+
+	return floatValue, nil
 }

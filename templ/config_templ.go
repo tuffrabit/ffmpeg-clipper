@@ -139,7 +139,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><label for=\"scale-factor\">Scale Down Factor</label> <input id=\"scale-factor\" name=\"scale-factor\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><label for=\"scale-factor\">Scale Down Factor</label> <input id=\"scale-factor\" name=\"scale-factor\" type=\"number\" step=\"0.00001\" min=\"0.0\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -147,7 +147,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div><div><label for=\"encoder\">Encoder</label> <select id=\"encoder\" name=\"encoder\" hx-trigger=\"change\" hx-get=\"/getencodersettings.html\" hx-target=\"#encoder-settings\" hx-swap=\"innerHTML\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" onchange=\"calculateScale();\"><script>calculateScale();</script></div><div><label for=\"encoder\">Encoder</label> <select id=\"encoder\" name=\"encoder\" hx-trigger=\"change\" hx-get=\"/getencodersettings.html\" hx-target=\"#encoder-settings\" hx-swap=\"innerHTML\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -168,7 +168,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(l)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templ\config.templ`, Line: 32, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templ\config.templ`, Line: 33, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -194,7 +194,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(l)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templ\config.templ`, Line: 34, Col: 51}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `templ\config.templ`, Line: 35, Col: 51}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -214,7 +214,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div><label for=\"saturation\" title=\"Default 1\">Saturation (0.0 to 3.0)</label> <input id=\"saturation\" name=\"saturation\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div><label for=\"saturation\" title=\"Default 1.0\">Saturation (Default 1.0)</label> <input id=\"saturation\" name=\"saturation\" type=\"number\" step=\"0.1\" min=\"0.0\" max=\"3.0\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -222,7 +222,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" title=\"Default 1\"></div><div><label for=\"contrast\" title=\"Default 1\">Contrast (-1000.0 to 1000.0)</label> <input id=\"contrast\" name=\"contrast\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div><div><label for=\"contrast\" title=\"Default 1.0\">Contrast (Default 1.0)</label> <input id=\"contrast\" name=\"contrast\" type=\"number\" step=\"0.1\" min=\"-1000.0\" max=\"1000.0\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -230,7 +230,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" title=\"Default 1\"></div><div><label for=\"brightness\" title=\"Default 0\">Brightness (-1.0 to 1.0)</label> <input id=\"brightness\" name=\"brightness\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div><div><label for=\"brightness\" title=\"Default 0.0\">Brightness (Default 0.0)</label> <input id=\"brightness\" name=\"brightness\" type=\"number\" step=\"0.01\" min=\"-1.0\" max=\"1.0\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -238,7 +238,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" title=\"Default 0\"></div><div><label for=\"gamma\" title=\"Default 1\">Gamma (0.1 to 10.0)</label> <input id=\"gamma\" name=\"gamma\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div><div><label for=\"gamma\" title=\"Default 1.0\">Gamma (Default 1.0)</label> <input id=\"gamma\" name=\"gamma\" type=\"number\" step=\"0.1\" min=\"0.1\" max=\"10.0\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -246,7 +246,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" title=\"Default 1\"></div><div><label for=\"exposure\" title=\"Default 0\">Exposure (-3.0 to 3.0)</label> <input id=\"exposure\" name=\"exposure\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div><div><label for=\"exposure\" title=\"Default 0.0\">Exposure (Default 0.0)</label> <input id=\"exposure\" name=\"exposure\" type=\"number\" step=\"0.01\" min=\"-3.0\" max=\"3.0\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -254,7 +254,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" title=\"Default 0\"></div><div><label for=\"black-level\" title=\"Default 0\">Black Level (-1.0 to 1.0)</label> <input id=\"black-level\" name=\"black-level\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div><div><label for=\"black-level\" title=\"Default 0.0\">Black Level (Default 0.0)</label> <input id=\"black-level\" name=\"black-level\" type=\"number\" step=\"0.01\" min=\"-1.0\" max=\"1.0\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -262,7 +262,7 @@ func GetProfile(profile config.ClipProfileJson) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\" title=\"Default 0\"></div><div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></div><div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

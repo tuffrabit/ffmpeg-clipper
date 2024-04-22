@@ -33,6 +33,11 @@ templ GetVideoPlayerOutOfBand(path string) {
     ></video>
 }
 
+templ GetVideoDetailsOutOfBand(width string, height string) {
+    <input id="source-width" type="text" readonly hx-swap-oob="outerHTML:#source-width" value={ width } />
+    <input id="source-height" type="text" readonly hx-swap-oob="outerHTML:#source-height" value={ height } />
+}
+
 templ GetVideoResolutionOutOfBand(resolution string) {
     <p hx-swap-oob="innerHTML:#video-resolution">Resolution: { resolution }</p>
 }

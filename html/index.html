@@ -108,22 +108,35 @@
         <div>
           <div id="video-title"><strong></strong></div>
           <video id="video-player" style="width:100%;height:auto" controls autoplay></video>
-          <div id="video-resolution"></div>
           <div>
             <button onclick="setClipStart()">Set Clip Start</button>
             <button onclick="setClipStop()">Set Clip Stop</button>
             <button onclick="closeVideo()">Close Video</button>
           </div>
+          <div id="video-details">
+            <div>
+                <label for="source-width">Source Width</label>
+                <input id="source-width" type="text" readonly />
+            </div>
+            <div>
+                <label for="source-height">Source Height</label>
+                <input id="source-height" type="text" readonly />
+            </div>
+            <div>
+                <label for="new-size">New Size</label>
+                <input id="new-size" type="text" readonly />
+            </div>
+        </div>
         </div>
         <div>
           <form id="current-profile-form">
             <div>
               <label for="start-time">Start (hh:mm:ss)</label>
-              <input id="start-time" name="start-time" type="text" value="00:00:00" />
+              <input id="start-time" name="start-time" type="text" pattern="[0-9][0-9]:[0-9][0-9]:[0-9][0-9]" value="00:00:00" required />
             </div>
             <div>
               <label for="end-time">End (hh:mm:ss)</label>
-              <input id="end-time" name="end-time" type="text" value="00:00:00" />
+              <input id="end-time" name="end-time" type="text" pattern="[0-9][0-9]:[0-9][0-9]:[0-9][0-9]" value="00:00:00" required />
             </div>
             <div id="profile-form" hx-trigger="change from:#profiles-select" hx-get="/getprofile.html" hx-swap="innerHTML" hx-vals='js:{name: getSelectedProfile().value}' style="margin-bottom:13px;"></div>
             <button hx-trigger="click" hx-post="/clip.html" hx-vals='js:{video: getSelectedVideo().value}'>Clip</button>
@@ -133,12 +146,6 @@
     </main>
     <footer class="container-fluid"></footer>
     <script>
-      document.body.addEventListener('htmx:responseError', function(evt) {
-        console.log(evt.detail.xhr.response);
-        document.getElementById("alert-icon").style.color = "tomato";
-        let alertText = document.getElementById("alert-text");
-        alertText.value = alertText.value + evt.detail.xhr.response + '\n';
-      });
       const socket = new WebSocket("{{.WsUri}}/active");
 
       // Connection opened
@@ -159,6 +166,46 @@
       // Connection error
       socket.addEventListener("error", (event) => {
         alert("Backend is no longer responding, you can close this window.");
+      });
+
+      document.body.addEventListener('htmx:responseError', function(evt) {
+        console.log(evt.detail.xhr.response);
+        document.getElementById("alert-icon").style.color = "tomato";
+        const alertText = document.getElementById("alert-text");
+        alertText.value = alertText.value + evt.detail.xhr.response + '\n';
+      });
+
+      document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        const inputs = document.getElementsByTagName('input');
+        let invalid = false;
+
+        for (const input of inputs) {
+          if (!input.checkValidity()) {
+            input.setAttribute("aria-invalid", "true");
+            invalid = true;
+            continue;
+          }
+
+          input.removeAttribute("aria-invalid");
+        }
+
+        if (invalid) {
+          evt.preventDefault();
+        }
+      });
+
+      // Select the target node.
+      const videoDetails = document.querySelector('#video-details');
+
+      // Create an observer instance.
+      var observer = new MutationObserver(function(mutations) {
+        calculateScale();
+      });
+
+      // Pass in the target node, as well as the observer options.
+      observer.observe(videoDetails, {
+        childList: true,
+        subtree: true
       });
     </script>
   </body>

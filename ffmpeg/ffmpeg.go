@@ -7,22 +7,18 @@ import (
 )
 
 var FfmpegPath string
-var FfplayPath string
 var FfprobePath string
 
 type Exists struct {
 	FFmpegExists  bool
-	FFplayExists  bool
 	FFprobeExists bool
 }
 
 func CheckFFmpeg() Exists {
 	FfmpegPath = "./ffmpeg.exe"
-	FfplayPath = "./ffplay.exe"
 	FfprobePath = "./ffprobe.exe"
 	result := Exists{
 		FFmpegExists:  false,
-		FFplayExists:  false,
 		FFprobeExists: false,
 	}
 
@@ -33,7 +29,6 @@ func CheckFFmpeg() Exists {
 	for _, pathEntry := range paths {
 		if strings.Contains(pathEntry, "ffmpeg") {
 			FfmpegPath = fmt.Sprintf("%v%vffmpeg.exe", pathEntry, pathSeparator)
-			FfplayPath = fmt.Sprintf("%v%vffplay.exe", pathEntry, pathSeparator)
 			FfprobePath = fmt.Sprintf("%v%vffprobe.exe", pathEntry, pathSeparator)
 			break
 		}
@@ -42,11 +37,6 @@ func CheckFFmpeg() Exists {
 	_, err := os.Stat(FfmpegPath)
 	if err == nil {
 		result.FFmpegExists = true
-	}
-
-	_, err = os.Stat(FfplayPath)
-	if err == nil {
-		result.FFplayExists = true
 	}
 
 	_, err = os.Stat(FfprobePath)

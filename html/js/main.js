@@ -70,3 +70,18 @@ function closeVideo() {
     document.getElementById('video-title').innerHTML = '';
     document.getElementById('video-player').src = '';
 }
+
+function calculateScale() {
+    let scaleFactorElement = document.getElementById("scale-factor");
+
+    if (scaleFactorElement) {
+        let scaleFactor = scaleFactorElement.value;
+        let sourceWidth = document.getElementById("source-width").value;
+        let sourceHeight = document.getElementById("source-height").value;
+        let newWidth = sourceWidth / scaleFactor;
+        let newHeight = sourceHeight / scaleFactor;
+        let newSize = Math.trunc(newWidth) + "x" + Math.trunc(newHeight);
+    
+        document.getElementById("new-size").value = newSize;
+    }
+}

@@ -151,7 +151,7 @@ func GetLibx264EncoderSettings(settings config.EncoderSettingsInterface) templ.C
 				}
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (0 to 51)</label> <input id=\"libx264-quality-target\" name=\"quality-target\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (0 to 51)</label> <input id=\"libx264-quality-target\" name=\"quality-target\" type=\"number\" step=\"1\" min=\"0\" max=\"51\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -244,7 +244,7 @@ func GetLibx265EncoderSettings(settings config.EncoderSettingsInterface) templ.C
 				}
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (0 to 51)</label> <input id=\"libx265-quality-target\" name=\"quality-target\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (0 to 51)</label> <input id=\"libx265-quality-target\" name=\"quality-target\" type=\"number\" step=\"1\" min=\"0\" max=\"51\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -276,7 +276,7 @@ func GetAomAv1EncoderSettings(settings config.EncoderSettingsInterface) templ.Co
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><label for=\"quality-target\">Quality Target (0 to 63)</label> <input id=\"libaom-av1-quality-target\" name=\"quality-target\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div><label for=\"quality-target\">Quality Target (0 to 63)</label> <input id=\"libaom-av1-quality-target\" name=\"quality-target\" type=\"number\" step=\"1\" min=\"0\" max=\"63\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -377,7 +377,7 @@ func GetNvenc264EncoderSettings(settings config.EncoderSettingsInterface) templ.
 				}
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (0 to 51)</label> <input id=\"h264_nvenc-quality-target\" name=\"quality-target\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (0 to 51)</label> <input id=\"h264_nvenc-quality-target\" name=\"quality-target\" type=\"number\" step=\"1\" min=\"0\" max=\"51\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -478,7 +478,7 @@ func GetNvencHevcEncoderSettings(settings config.EncoderSettingsInterface) templ
 				}
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (0 to 51)</label> <input id=\"hevc_nvenc-quality-target\" name=\"quality-target\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (0 to 51)</label> <input id=\"hevc_nvenc-quality-target\" name=\"quality-target\" type=\"number\" step=\"1\" min=\"0\" max=\"51\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -571,7 +571,7 @@ func GetIntelH264EncoderSettings(settings config.EncoderSettingsInterface) templ
 				}
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (1 to 51)</label> <input id=\"h264_qsv-quality-target\" name=\"quality-target\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (1 to 51)</label> <input id=\"h264_qsv-quality-target\" name=\"quality-target\" type=\"number\" step=\"1\" min=\"1\" max=\"51\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -664,7 +664,7 @@ func GetIntelHevcEncoderSettings(settings config.EncoderSettingsInterface) templ
 				}
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (1 to 51)</label> <input id=\"hevc_qsv-quality-target\" name=\"quality-target\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (1 to 51)</label> <input id=\"hevc_qsv-quality-target\" name=\"quality-target\" type=\"number\" step=\"1\" min=\"1\" max=\"51\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -757,7 +757,7 @@ func GetIntelAv1EncoderSettings(settings config.EncoderSettingsInterface) templ.
 				}
 			}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (1 to 51)</label> <input id=\"av1_qsv-quality-target\" name=\"quality-target\" type=\"text\" value=\"")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</select></div><div><label for=\"quality-target\">Quality Target (1 to 51)</label> <input id=\"av1_qsv-quality-target\" name=\"quality-target\" type=\"number\" step=\"1\" min=\"1\" max=\"51\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

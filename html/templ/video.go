@@ -1,10 +1,13 @@
 package templ
 
 import (
+	"errors"
 	templates "ffmpeg-clipper/templ"
 	video "ffmpeg-clipper/video"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/a-h/templ"
 )
@@ -42,6 +45,33 @@ func GetVideoPlayerOutOfBand(path string) (templ.Component, error) {
 	}
 
 	return templates.GetVideoPlayerOutOfBand("streamvideo/" + path), nil
+}
+
+func GetVideoDetailsOutOfBand(resolution string) (templ.Component, error) {
+	if resolution == "" {
+		return templates.GetVideoDetailsOutOfBand("", ""), nil
+	}
+
+	if !strings.Contains(resolution, "x") {
+		return nil, errors.New("html/templ/video.GetVideoDetailsOutOfBand: resolution string not valid")
+	}
+
+	parts := strings.Split(resolution, "x")
+	if len(parts) < 2 {
+		return nil, errors.New("html/templ/video.GetVideoDetailsOutOfBand: resolution string does not contain enough parts")
+	}
+
+	_, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("html/templ/video.GetVideoDetailsOutOfBand: could not parse width: %w", err)
+	}
+
+	_, err = strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("html/templ/video.GetVideoDetailsOutOfBand: could not parse height: %w", err)
+	}
+
+	return templates.GetVideoDetailsOutOfBand(parts[0], parts[1]), nil
 }
 
 func GetVideoResolutionOutOfBand(resolution string) templ.Component {

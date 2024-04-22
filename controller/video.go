@@ -1,15 +1,12 @@
 package controller
 
 import (
-	"ffmpeg-clipper/common"
-	"ffmpeg-clipper/ffmpeg"
 	"ffmpeg-clipper/html/templ"
+	"ffmpeg-clipper/video"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -39,7 +36,7 @@ func GetVideoPlayer(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 		return
 	}
 
-	cmd := exec.Command(
+	/*cmd := exec.Command(
 		ffmpeg.FfprobePath,
 		"-v",
 		"error",
@@ -53,19 +50,30 @@ func GetVideoPlayer(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	)
 	output, err := common.RunSystemCommand(cmd)
 	if err != nil {
-		handleResponseError(w, fmt.Sprintf("controller.GetVideoDetails: ffprobe failed\nstderr: %v\nerr: %v", output, err))
+		handleResponseError(w, fmt.Sprintf("controller.GetVideoPlayer: ffprobe failed\nstderr: %v\nerr: %v", output, err))
 		return
 	}
 
 	output = strings.TrimSuffix(output, "\r\n")
 	output = strings.TrimSuffix(output, "\n")
-	output = strings.TrimSuffix(output, "\r")
+	output = strings.TrimSuffix(output, "\r")*/
+
+	resolution, err := video.GetVideoResolution(videoPath)
+	if err != nil {
+		handleResponseError(w, fmt.Sprintf("controller.GetVideoPlayer: could not get video resolution: %v", err))
+		return
+	}
+
+	videoDetailsComponent, err := templ.GetVideoDetailsOutOfBand(resolution)
+	if err != nil {
+		handleResponseError(w, fmt.Sprintf("controller.GetVideoPlayer: could not get video details: %v", err))
+		return
+	}
 
 	videoPlayerComponent.Render(r.Context(), w)
 	videoNameComponent := templ.GetVideoNameOutOfBand(videoPath)
 	videoNameComponent.Render(r.Context(), w)
-	videoResolutionComponent := templ.GetVideoResolutionOutOfBand(output)
-	videoResolutionComponent.Render(r.Context(), w)
+	videoDetailsComponent.Render(r.Context(), w)
 }
 
 func DeleteVideo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -95,7 +103,15 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
+	videoDetailsComponent, err := templ.GetVideoDetailsOutOfBand("")
+	if err != nil {
+		handleResponseError(w, fmt.Sprintf("controller.DeleteVideo: could not get video details: %v", err))
+		return
+	}
+
 	availableVideosSelectComponent.Render(r.Context(), w)
+	videoNameComponent := templ.GetVideoNameOutOfBand("")
+	videoNameComponent.Render(r.Context(), w)
 	videoPlayerComponent.Render(r.Context(), w)
-	templ.GetVideoResolutionOutOfBand("").Render(r.Context(), w)
+	videoDetailsComponent.Render(r.Context(), w)
 }

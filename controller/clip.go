@@ -1,17 +1,13 @@
 package controller
 
 import (
-	"ffmpeg-clipper/common"
 	"ffmpeg-clipper/config"
 	ffmpegEncoder "ffmpeg-clipper/encoder"
-	"ffmpeg-clipper/ffmpeg"
 	"ffmpeg-clipper/html/templ"
+	"ffmpeg-clipper/video"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
-	"os/exec"
-	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -41,9 +37,6 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	fields["encoder"] = r.FormValue("encoder")
 	fields["encodingPreset"] = r.FormValue("encoding-preset")
 	fields["qualityTarget"] = r.FormValue("quality-target")
-
-	log.Println("Clip fields:")
-	log.Println(fields)
 
 	var newVideoName string
 	var err error
@@ -82,7 +75,7 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	ffprobeErr := false
 
-	cmd := exec.Command(
+	/*cmd := exec.Command(
 		ffmpeg.FfprobePath,
 		"-v",
 		"error",
@@ -107,6 +100,12 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if output == "" {
 		handleResponseError(w, fmt.Sprintf("controller.ClipVideo: generated clip %v is invalid", newVideoName))
 		ffprobeErr = true
+	}*/
+
+	resolution, err := video.GetVideoResolution(newVideoName)
+	if err != nil {
+		handleResponseError(w, fmt.Sprintf("controller.ClipVideo: generated clip %v is invalid", newVideoName))
+		ffprobeErr = true
 	}
 
 	if ffprobeErr {
@@ -125,9 +124,6 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	availableVideosSelectComponent.Render(r.Context(), w)
 
-	videoNameComponent := templ.GetVideoNameOutOfBand(newVideoName)
-	videoNameComponent.Render(r.Context(), w)
-
 	playAfter := r.FormValue("play-after")
 	if playAfter != "" {
 		videoPlayerComponent, err := templ.GetVideoPlayerOutOfBand(newVideoName)
@@ -136,6 +132,15 @@ func ClipVideo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			return
 		}
 
+		videoDetailsComponent, err := templ.GetVideoDetailsOutOfBand(resolution)
+		if err != nil {
+			handleResponseError(w, fmt.Sprintf("controller.GetVideoPlayer: could not get video details: %v", err))
+			return
+		}
+
 		videoPlayerComponent.Render(r.Context(), w)
+		videoDetailsComponent.Render(r.Context(), w)
+		videoNameComponent := templ.GetVideoNameOutOfBand(newVideoName)
+		videoNameComponent.Render(r.Context(), w)
 	}
 }

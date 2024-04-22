@@ -43,7 +43,7 @@ templ GetLibx264EncoderSettings(settings config.EncoderSettingsInterface) {
     </div>
     <div>
         <label for="quality-target">Quality Target (0 to 51)</label>
-        <input id="libx264-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
+        <input id="libx264-quality-target" name="quality-target" type="number" step="1" min="0" max="51" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
@@ -64,14 +64,14 @@ templ GetLibx265EncoderSettings(settings config.EncoderSettingsInterface) {
     </div>
     <div>
         <label for="quality-target">Quality Target (0 to 51)</label>
-        <input id="libx265-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
+        <input id="libx265-quality-target" name="quality-target" type="number" step="1" min="0" max="51" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
 templ GetAomAv1EncoderSettings(settings config.EncoderSettingsInterface) {
     <div>
         <label for="quality-target">Quality Target (0 to 63)</label>
-        <input id="libaom-av1-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
+        <input id="libaom-av1-quality-target" name="quality-target" type="number" step="1" min="0" max="63" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
@@ -100,7 +100,7 @@ templ GetNvenc264EncoderSettings(settings config.EncoderSettingsInterface) {
     </div>
     <div>
         <label for="quality-target">Quality Target (0 to 51)</label>
-        <input id="h264_nvenc-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
+        <input id="h264_nvenc-quality-target" name="quality-target" type="number" step="1" min="0" max="51" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
@@ -129,7 +129,7 @@ templ GetNvencHevcEncoderSettings(settings config.EncoderSettingsInterface) {
     </div>
     <div>
         <label for="quality-target">Quality Target (0 to 51)</label>
-        <input id="hevc_nvenc-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
+        <input id="hevc_nvenc-quality-target" name="quality-target" type="number" step="1" min="0" max="51" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
@@ -150,7 +150,7 @@ templ GetIntelH264EncoderSettings(settings config.EncoderSettingsInterface) {
     </div>
     <div>
         <label for="quality-target">Quality Target (1 to 51)</label>
-        <input id="h264_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
+        <input id="h264_qsv-quality-target" name="quality-target" type="number" step="1" min="1" max="51" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
@@ -171,7 +171,7 @@ templ GetIntelHevcEncoderSettings(settings config.EncoderSettingsInterface) {
     </div>
     <div>
         <label for="quality-target">Quality Target (1 to 51)</label>
-        <input id="hevc_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
+        <input id="hevc_qsv-quality-target" name="quality-target" type="number" step="1" min="1" max="51" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }
 
@@ -192,6 +192,6 @@ templ GetIntelAv1EncoderSettings(settings config.EncoderSettingsInterface) {
     </div>
     <div>
         <label for="quality-target">Quality Target (1 to 51)</label>
-        <input id="av1_qsv-quality-target" name="quality-target" type="text" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
+        <input id="av1_qsv-quality-target" name="quality-target" type="number" step="1" min="1" max="51" value={ fmt.Sprintf("%d", settings.GetQualityTarget()) } />
     </div>
 }

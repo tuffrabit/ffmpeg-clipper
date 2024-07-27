@@ -1,4 +1,5 @@
 ffmpeg-clipper.exe
+ffmpeg-clipper-v*.exe
 ffmpeg-clipper-config.json
 ffmpeg-clipper.log
 *.mp4

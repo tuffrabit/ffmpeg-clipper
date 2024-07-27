@@ -68,7 +68,10 @@ function setClipStop() {
 
 function closeVideo() {
     document.getElementById('video-title').innerHTML = '';
-    document.getElementById('video-player').src = '';
+    let videoPlayer = document.getElementById('video-player');
+    videoPlayer.pause();
+    videoPlayer.src = '';
+    videoPlayer.load();
 }
 
 function calculateScale() {

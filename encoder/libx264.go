@@ -61,6 +61,8 @@ func ClipLibx264(bodyJson map[string]interface{}) (string, error) {
 			commonclipParams.Brightness,
 			commonclipParams.Gamma,
 		),
+		"-movflags",
+		"faststart",
 		newVideoName,
 	)
 	cmdOutput, err := common.RunSystemCommand(cmd)
